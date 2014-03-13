@@ -1,0 +1,282 @@
+import ddf.minim.*;
+import java.awt.event.*;
+
+PVector center, sliderLeft, sliderRight;
+//drawing size
+int boxLength = 1200;
+int boxHeight = 500;
+
+//string parameters
+float strLength = 200;
+float strStart = (boxLength/2 - strLength/2);
+float strTension = 70; //don't know what units we want this in
+float strWeight = 1;
+float maxLength = 1000; //max length of string in pixels
+float lengthFactor = 65/maxLength; //scale factor to multiply pixels by to get length in cm
+float weightFactor = .5/1000; //scale factor for string weight
+float realLength = strLength*lengthFactor;
+float realWeight = strWeight*weightFactor;
+float realTension = strTension;
+
+PFont fSmall;
+PFont fBig;
+
+float currentFreq = getStrFreq(realLength, realTension, realWeight);
+float goalFreq = getRandomFreq();
+float drawingFreq = 3; //frequency of animation
+float defaultTime = 1/(2*PI*drawingFreq);
+float time = defaultTime;
+
+int drawIndex = 0; //current frame
+int startIndex = 0; //frame when the note starts playing
+
+boolean playingNote = false;
+int n = 1; //harmonic number
+
+//play button for matching frequency
+int triX, triY, triSide;
+color triColor, triHighlight;
+float xShift,yShift;
+boolean triOver = false;
+boolean stringOver = false;
+
+//output and instruction statements
+String[] prompt = {"Match the goal frequency by changing the string properties.", 
+"Change the string such that the ratio of the string frequency to the goal frequency is 1:2",
+"Change the string such that the ratio of the string frequency to the goal frequency is 2:3",
+"Change the string such that the ratio of the string frequency to the goal frequency is 3:4"};
+
+//prompt[0] = "Match the goal frequency by changing the string properties.";
+//prompt[1] = "Change the string such that the ratio of the string frequency to the goal frequency is 1:2";
+//prompt[2] = "Change the string such that the ratio of the string frequency to the goal frequency is 2:3";
+//prompt[3] = "Change the string such that the ratio of the string frequency to the goal frequency is 3:4";
+
+String[] congrats = {"You matched the frequency.",
+"You've got it. This is called an octave.",
+"You've got it. This is called a fifth.",
+"You've got it. This is called a fourth."," "};
+
+float[] goalFreqs = {440,720,900,600,1};
+
+float[] ratios = {1,.5,.6667,.75,1};
+int myIndex = 0;
+
+//audio outputs
+Minim minim;
+AudioOutput output;
+Minim goalMinim;
+AudioOutput goalOutput;
+
+void setup(){
+  fSmall = createFont("Arial",16,true);
+  fBig = createFont("Arial",32,true);
+  size(boxLength,boxHeight);
+  rectMode(CENTER);
+  fill(0);
+  center = new PVector(width/2, height/2);
+  sliderLeft  = new PVector(200, height - 200);
+  sliderRight = new PVector(sliderLeft.x + 200, sliderLeft.y);
+
+  //initialize sound outputs
+  minim = new Minim(this);
+  output = minim.getLineOut();
+  goalMinim = new Minim(this);
+  goalOutput = goalMinim.getLineOut();
+  
+  //setup triangle playbutton
+  triColor = color(0,255,0);
+  triHighlight = color(0,150,0);
+  triSide = 40;
+  triX = 375; //coords of right point on triangle
+  triY = 150;
+  xShift = cos(PI/6)*triSide; //will make an equilateral triangle
+  yShift = sin(PI/6)*triSide;
+}
+
+void draw(){
+  background(255);
+  update(mouseX, mouseY);
+  drawRectangles(strLength, time);
+  if (triOver) {
+    fill(triHighlight);
+  } else {
+    fill(triColor);
+  }
+  stroke(0);
+  triangle(triX,triY,triX-xShift,triY+yShift,triX-xShift,triY-yShift);
+  
+  //you need a string
+ //rect(center.x, center.y, strLength, strWeight); 
+  
+  
+  fill(0);
+  //you need to show info on the string's attributes 
+textAlign(CENTER,BOTTOM); 
+textFont(fSmall,16); 
+text("Current Length: " + String.format("%.2f",realLength) + " cm", 120, 30);
+text("Current Tension: " + strTension + "N  " + myIndex, 120, 50);
+text("Current Weight: " + String.format("%.2f",realWeight*1000) + " g/m", 120, 70);
+currentFreq = getStrFreq(realLength, realTension, realWeight);
+text("Current Frequency: " + String.format("%.2f",currentFreq) + " Hz",450,40);
+text("Goal Frequency: " + String.format("%.2f",goalFreqs[myIndex]) + " Hz", 450,60);
+if(currentFreq/goalFreqs[myIndex] >= ratios[myIndex]-.01 
+  && currentFreq/goalFreqs[myIndex] <= ratios[myIndex]+.01 
+  && playingNote == true && myIndex<3){
+  myIndex = myIndex + 1;
+}
+fill(255,0,0);
+textFont(fBig,16);
+
+text(prompt[myIndex],600,400);
+
+if (keyPressed == true && key == CODED){
+    //make string longer
+  if(keyCode == RIGHT && strLength <= maxLength){
+    strLength = strLength + 250./65.;
+    realLength = (strLength)*lengthFactor;
+    strStart = (boxLength/2 - strLength/2);
+  }
+
+  //shorten string
+  if(keyCode == LEFT && strLength >= 100){
+    strLength = strLength - 250./65.;
+    realLength = strLength*lengthFactor;
+    strStart = (boxLength/2 - strLength/2);
+  }
+
+ //increase tension
+  if (keyCode == CONTROL && strTension <=90) {
+    strTension = strTension + .5;
+    realTension = strTension;
+  }
+ 
+  //decrease tension
+  if(keyCode == ALT && strTension >=70 ) {
+    strTension = strTension - .5;
+    realTension = strTension;
+  }  
+  
+  //increase weight
+  //want weight to range from .0005 to .007 in kg/m
+  if (keyCode == UP && strWeight <= 14) {
+    strWeight = strWeight + 0.25;
+    realWeight = strWeight*weightFactor;
+  }
+
+  //decrease weight
+  if (keyCode == DOWN && strWeight >= 1.5) {
+    strWeight = strWeight - 0.25; 
+    realWeight = strWeight*weightFactor;
+  }
+  
+  //you need a play sound button
+  //commented this out as it is now handled by clicking the string
+  //if(keyCode == SHIFT) {
+  //  if(playingNote == false){
+  //    startIndex = drawIndex;
+  //    playingNote = true;
+  //    output.playNote(0,3,getStrFreq(realLength, realTension, realWeight));
+  //    }
+  //  }
+
+    //minim method: takes frequency as int, plays note
+    
+}
+  if(playingNote==true){
+    time = time + 1/60.;
+  }  
+   
+   if(drawIndex>startIndex+180){
+        playingNote = false;
+        time = defaultTime;
+   }
+  drawIndex = drawIndex + 1;
+  redraw();
+
+}
+
+
+void update(int x, int y) {
+  if ( overTri(triX, triY, triSide) ) {
+    triOver = true;
+  } else {
+    triOver = false;
+  }
+  if (overString(strLength)){
+    stringOver = true;
+  } else {
+    stringOver = false;
+  }
+}
+
+void mousePressed() {
+  if (triOver) {
+    goalOutput.playNote(0,3,goalFreqs[myIndex]);
+  }
+  if (stringOver) {
+      if(playingNote == false){
+        startIndex = drawIndex;
+        playingNote = true;
+        output.playNote(0,3,getStrFreq(realLength, realTension, realWeight));
+      }
+  }
+}
+
+//Returns Frequency of String based on length, weight, and tension of string
+float getStrFreq(float len, float ten, float wei){
+  float f = sqrt(ten/wei)/(2*len/100);
+  //replace 440 with actual math for freq based on length, weight, tension
+  //return 440;
+  return f;
+}
+
+//generates a random string frequency within range of values for tension, weight, and length
+float getRandomFreq(){
+  float rTension = 69 + random(22);
+  float rWeight = (0.5 + random(27)*0.25)/1000.;
+  float rLength = 12 + random(53);
+  return getStrFreq(rLength, rTension,rWeight);
+}
+
+float getPixelMove(float x, float t){
+  float w = 2*PI*drawingFreq;
+  float k = 2*PI/(2*strLength/n); //wavelength for fundamental is 2*length, so k = pi/length
+  float y = (15/t+.5)*cos(w*t)*sin(k*(x-strStart));
+  if(playingNote==false){
+    y=0;
+  }
+  return y;
+}
+
+void drawRectangles(float strLength, float time){
+  background(255);
+  for (float x=strStart;x<strLength+strStart;x=x+1){
+    fill(0);
+    //float y = (boxHeight/2);
+    float y = (boxHeight/2) + getPixelMove(x,time);
+    rect(x,y,1,strWeight);
+  } 
+}
+
+boolean overTri(int x, int y, float xShift)  {
+  if (mouseX >= x-xShift && mouseX <= x){
+    float newYShift = (triX-mouseX)/2;
+    float yMax = y + newYShift;
+    float yMin = y - newYShift;
+    if (mouseY >= yMin && mouseY <= yMax){
+      return true;
+    } else {
+      return false;
+    }
+  } else {
+    return false;
+  }
+} 
+
+boolean overString(float strLength)  {
+  if (mouseX >= strStart && mouseX <= strStart+strLength && mouseY >= boxHeight/2-40 && mouseY <= boxHeight/2+40){
+    return true;
+    } else {
+    return false;
+  }
+} 
