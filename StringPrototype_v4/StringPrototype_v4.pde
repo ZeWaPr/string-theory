@@ -37,13 +37,16 @@ float defaultTime = 1/(2*PI*drawingFreq);
 //freq to match
 float goalFreq = getRandomFreq();
 
+//musicstring to keep track of which can currently be altered
+MusicString currString; 
+
 void setup() {
 	//setup screen
   size(boxLength, boxHeight);
   background (255);
   
 	//initialize slider(s) and musicstring(s)
-  string = new MusicString(/*params*/);
+  string = new MusicString(100, 0); //TODO: 100 doesn't set y position of musicString
   slider = new Slider("Length", new PVector(40, 500), string, 0);
   slider1 = new Slider("Weight", new PVector(100, 500), string, 2);
   
@@ -51,6 +54,14 @@ void setup() {
   //initialize the list of strings
   strings = new ArrayList<MusicString>();
   strings.add(string);
+  
+    //set the current string
+  string.setCurrent(true);
+  for (MusicString ms : strings) {
+  if(ms.getCurrent()) {
+    currString = ms;
+  }
+  }
   
   //initialize the list of sliders
   sliders = new ArrayList<Slider>();
@@ -177,57 +188,57 @@ void update(int x, int y) {
 }
 
 void keyPressed() {
-	if (keyPressed == true && key == CODED){
+  if (keyPressed == true && key == CODED){
     //make string longer
-  if(keyCode == RIGHT && strLength <= maxLength){
-    strLength = strLength + 250./65.;
-    realLength = (strLength)*lengthFactor;
-    strStart = (boxLength/2 - strLength/2);
+  if(keyCode == RIGHT && currString.getStrLength() <= currString.getMaxLength()){
+    currString.setStrLength(  currString.getStrLength() + 250./65. );    
+    currString.setRealLength( currString.getStrLength() * currString.getLengthFactor() );
+    currString.strStart = (boxLength/2 - currString.getStrLength()/2);
   }
 
   //shorten string
-  if(keyCode == LEFT && strLength >= minLength){
-    strLength = strLength - 250./65.;
-    realLength = strLength*lengthFactor;
-    strStart = (boxLength/2 - strLength/2);
+  if(keyCode == LEFT && currString.getStrLength() >= currString.getMinLength()){
+    currString.setStrLength(  currString.getStrLength() - 250./65. );    
+    currString.setRealLength( currString.getStrLength() * currString.getLengthFactor() );
+    currString.strStart = (boxLength/2 - currString.getStrLength()/2);
   }
 
  //increase tension
-  if (keyCode == CONTROL && strTension <= maxTension) {
-    strTension = strTension + .5;
-    realTension = strTension;
+  if (keyCode == CONTROL && currString.getStrTension() <= currString.getMaxTension()) {
+    currString.setStrTension( currString.getStrTension() + .5 );
+    currString.setRealTension( currString.getStrTension() );
   }
  
   //decrease tension
-  if(keyCode == ALT && strTension >= minTension ) {
-    strTension = strTension - .5;
-    realTension = strTension;
+  if(keyCode == ALT && currString.getStrTension() >= currString.getMinTension() ) {
+    currString.setStrTension( currString.getStrTension() - .5 );
+    currString.setRealTension( currString.getStrTension() );
   }  
   
   //increase weight
   //want weight to range from .0005 to .007 in kg/m
-  if (keyCode == UP && strWeight <= maxWeight) {
-    strWeight = strWeight + 0.25;
-    realWeight = strWeight*weightFactor;
+  if (keyCode == UP && currString.getStrWeight() <= currString.getMaxWeight()) {
+    currString.setStrWeight( currString.getStrWeight() + 0.25 );
+    currString.setRealWeight( currString.getStrWeight() * currString.getWeightFactor() );
   }
 
   //decrease weight
-  if (keyCode == DOWN && strWeight >= minWeight) {
-    strWeight = strWeight - 0.25; 
-    realWeight = strWeight*weightFactor;
-  }		
+  if (keyCode == DOWN && currString.getStrWeight() >= currString.getMinWeight()) {
+    currString.setStrWeight( currString.getStrWeight() - 0.25 );
+    currString.setRealWeight( currString.getStrWeight() * currString.getWeightFactor() );
+  }    
 
-	
-		if(keyCode == SHIFT) {
-			for (MusicString ms : strings ){
-	  		  if(ms.playingNote == false){
- 			     ms.startIndex = drawIndex;
- 			     ms.playingNote = true;
-	 		     output.playNote(0,3,getStrFreq(ms.realLength, ms.realTension, ms.realWeight));
-				}
-			}
-    	}
-	}
+  
+  if(keyCode == SHIFT) {
+  for (MusicString ms : strings ){
+    if(ms.playingNote == false){
+       ms.startIndex = drawIndex;
+       ms.playingNote = true;
+       output.playNote(0,3,getStrFreq(ms.realLength, ms.realTension, ms.realWeight));
+      }
+  }
+  }
+}
 }
 
 //update used in this when always drawing
@@ -372,7 +383,7 @@ class Slider {
 //true if mouse position is over slider
 boolean overSlider(){
 	boolean tf = false;
-	if (mouseX >= location.x && mouseX =< location.x + wide && mouseY >= location.y && mouseY =< location.y + tall){
+  if (mouseX >= location.x && mouseX <= location.x + wide && mouseY >= location.y && mouseY <= location.y + tall){
         tf = true;
     }
     return tf;
@@ -445,7 +456,7 @@ class MusicString {
 	PVector startPosition;	//where on screen the string appears
 
 //constructor
-MusicString (PVector start, int fc){	
+MusicString (int ypos, int fc){	
 	 //string specific parameters
 	strLength = 200;
 	strStart = (boxLength/2 - strLength/2); //TODO: doesn't center string like it should
@@ -478,8 +489,7 @@ MusicString (PVector start, int fc){
 	
 	fillColor = fc;			//the color of the string
 	current = false;		//whether or not this string can currently be altered
-	PVector startPosition = start;	//where on screen the string appears
-	
+ int yposition = ypos; //on screen y position of string	
 }
 
 
@@ -547,57 +557,92 @@ float getCurrAttrVal(int attrNum) {
 
 /** GETTERS AND SETTERS */   
    
+   
 void setCurrent(boolean tf){
-	current = tf;
+  current = tf;
 }
    
 void setStrLength(float newLength){
-	strLength = newLength;
+  strLength = newLength;
 }
  
 void setStrTension(float newTension){
-	strTension = newTension;
+  strTension = newTension;
 }
 
 void setStrWeight(float newWeight) {
-	strWeight = newWeight;
+  strWeight = newWeight;
+}
+
+void setRealLength(float newRealLength) {
+  realLength = newRealLength;
+}
+ 
+void setRealWeight(float newRealWeight) {
+  realWeight = newRealWeight;
+}
+
+void setRealTension(float newRealTension) {
+  realTension = newRealTension;
 }
 
 boolean getPlayingNote(){
-	return playingNote;
+  return playingNote;
 }
 
+//true if this string can currently be altered, false if it cannot
 boolean getCurrent(){
-	return current;
+  return current;
 }
 
 int getStartIndex(){
-	return startIndex;
+  return startIndex;
+}
+
+float getStrLength(){
+  return strLength;
+}
+ 
+float getStrWeight(){
+  return strWeight;
+}
+
+float getStrTension(){
+  return strTension;
 }
 
 float getMaxLength(){
-	return maxLength;
+  return maxLength;
 }
 
 float getMaxTension(){
-	return maxTension;
+  return maxTension;
 }
 
 float getMaxWeight(){
-	return maxWeight;
+  return maxWeight;
 }
 
 float getMinLength(){
-	return minLength;
+  return minLength;
 }
 
 float getMinTension(){
-	return minTension;
+  return minTension;
 }
 
 float getMinWeight(){
-	return minWeight;
+  return minWeight;
 }
+
+float getLengthFactor(){
+  return lengthFactor;
+}
+
+float getWeightFactor() {
+  return weightFactor;
+}
+
 	
 }
  
