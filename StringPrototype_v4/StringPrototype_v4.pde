@@ -12,13 +12,8 @@ ArrayList<MusicString> strings; //arraylist so user can add and remove strings w
 
 //size of animation screen
 int boxLength = 900;
-int boxHeight = 800;
+int boxHeight = 750;
 
-//play button for matching frequency
-int triX, triY, triSide;
-color triColor, triHighlight;
-float xShift,yShift;
-boolean triOver = false;
 boolean stringOver = false;
 
 //sliders
@@ -27,10 +22,10 @@ GCustomSlider lSdr;
 GCustomSlider wSdr;
 
 //slider attributes
-int sliderLength = 400;
+int sliderLength = 500;
 int sliderHeight = 50;
 int sliderX = boxLength/2 - sliderLength/2; //left edge of of sliders
-int sliderY = boxHeight - 250;
+int sliderY = boxHeight - 250; // y coord of first slider
 
 //audio outputs
 Minim minim, goalMinim;
@@ -45,8 +40,8 @@ float drawingFreq = 3;
 float defaultTime = 1/(2*PI*drawingFreq);
 
 //freq to match
-float goalFreq = getRandomFreq();
-
+//float goalFreq = getRandomFreq();
+float goalFreq;
 PFont fSmall;
 PFont fBig;
 
@@ -75,13 +70,18 @@ void setup() {
   
   //initialize slider(s) and musicstring(s)
   string = new MusicString(200);  //TODO: Make this reflect goal freq
-  string1 = new MusicString(350);
+  string1 = new MusicString(350); 
   
   
   //initialize the list of strings
   strings = new ArrayList<MusicString>();
   strings.add(string);
   strings.add(string1);
+
+  //generate values for goal string
+  string.setRandomValues();
+  goalFreq = getStrFreq(string.realLength, string.realTension, string.realWeight);
+  
   
   //set the current string
   string1.setCurrent(true);
@@ -97,16 +97,7 @@ void setup() {
   output = minim.getLineOut();
   goalMinim = new Minim(this);
   goalOutput = goalMinim.getLineOut();
-  
-    //initialize triangle playbutton
-  triColor = color(0,255,0);
-  triHighlight = color(0,150,0);
-  triSide = 40;
-  triX = 325; //coords of right point on triangle
-  triY = 100;
-  xShift = cos(PI/6)*triSide; //will make an equilateral triangle
-  yShift = sin(PI/6)*triSide;
-  
+
   tSdr = new GCustomSlider(this, sliderX, sliderY, sliderLength, sliderHeight, null);
     //args are xpos, ypos, length, width
   // show          opaque  ticks value limits
@@ -120,7 +111,7 @@ void setup() {
   // show          opaque  ticks value limits
   lSdr.setShowDecor(false, true, false, true);
   lSdr.setNbrTicks(5);
-  lSdr.setLimits(5, 5, 70);
+  lSdr.setLimits(5, 10, 70);
   lSdr.setNumberFormat(G4P.DECIMAL, 1);
   
   wSdr = new GCustomSlider(this, sliderX, sliderY + 160, sliderLength, sliderHeight, null);
@@ -182,10 +173,17 @@ void draw() {
 
   //background color, called to wipe screen each frame
   background(255);
+  textAlign(CENTER, BOTTOM);
   
  //show current value of...
   //...the goal frequency
-  text("Goal Frequency: " + String.format("%.2f",goalFreq) + " Hz", 380,50);
+  textFont(fBig,24);
+  text("Change String 2 to match the frequency of String 1.", boxLength/2,80);
+  textFont(fBig,16);
+  text("String 1", 100,200);
+  text("f = " + String.format("%.2f",goalFreq) + " Hz", 100,230);
+  text("String 2", 100,350);
+  text("f = " + String.format("%.2f",getStrFreq(string1.realLength, string1.realTension, string1.realWeight)) + " Hz", 100,380);
   
   //show current objective
 //  text(objective[0], 200, 450);
@@ -196,17 +194,9 @@ void draw() {
     ms.drawRectangles(ms.strLength, ms.time);
   }
 
-  //have play button change color on mouseover
-  if (overTri(triX, triY, triSide)) {
-      fill(triHighlight);
-  } else {
-      fill(triColor);
-  }
   
   //draw the play button
-  stroke(0);
-  triangle(triX,triY,triX-xShift,triY+yShift,triX-xShift,triY-yShift);
-  
+  stroke(0);  
   
    //putting these in a for loop should allow multiple strings to play at once
     for( MusicString ms : strings) {
@@ -232,30 +222,9 @@ void draw() {
 
 
 
-//checks if mouse location is over Play button
-boolean overTri(int x, int y, float xShift)  {
-  if (mouseX >= x-xShift && mouseX <= x){
-    float newYShift = (triX-mouseX)/2;
-    float yMax = y + newYShift;
-    float yMin = y - newYShift;
-    if (mouseY >= yMin && mouseY <= yMax){
-      return true;
-    } else {
-      return false;
-    }
-  } else {
-    return false;
-  }
-} 
-
 
 //When trying to draw only when needed, don't use this
 void update(int x, int y) {
-  if ( overTri(triX, triY, triSide) ) {
-    triOver = true;
-  } else {
-    triOver = false;
-  }
   
   for (MusicString ms : strings){
     if (ms.overMusicString()){
@@ -269,10 +238,6 @@ void update(int x, int y) {
 void mousePressed() {
   //Since the mouse can only be in one location at a time, end
   //could have achieved the same effect by putting everything in a large if-else 
-  if (overTri(triX, triY, triSide)) {
-    goalOutput.playNote(0,3,goalFreq);
-    return;  
-  }
 
   for ( MusicString ms : strings){
       if (ms.overMusicString()) {
@@ -297,7 +262,7 @@ float getStrFreq(float len, float ten, float wei){
 float getRandomFreq(){
   float rTension = 70 + random(20);
   float rWeight = (0.5 + random(27)*0.25);
-  float rLength = 5 + random(65);
+  float rLength = 10 + random(60);
   return getStrFreq(rLength, rTension,rWeight);
 }
 
@@ -369,12 +334,12 @@ class MusicString {
 
 //constructor
 MusicString (int ypos){  
-   //string specific parameters
+   //string specific parameter
   strLength = 200;
-  strStart = (boxLength/2 - strLength/2); //TODO: doesn't center string like it should 
+  maxLength = 500; //max length of string in pixels
+  strStart = (boxLength/2 - maxLength/2); // string is now centered correctly -LW 
   strTension = 70; //don't know what units we want this in
   strWeight = 1;
-  maxLength = 500; //max length of string in pixels
   minLength = 100;
   maxTension = 90;
   minTension = 70;
@@ -382,7 +347,7 @@ MusicString (int ypos){
   minWeight = 1.5;
   
     //variables that, if we change them, we'd want them to change for all instances, probably
-  lengthFactor = 65/maxLength; //scale factor to multiply pixels by to get length in cm
+  lengthFactor = 70/maxLength; //scale factor to multiply pixels by to get length in cm
   weightFactor = .5; //scale factor for string weight
 
   realLength = strLength*lengthFactor;
@@ -434,7 +399,13 @@ float getPixelMove(float x, float t){
 void drawRectangles(float strLength, float time){
   rectMode(CENTER);
   tIndex = int(10*(strTension-70));
-  stroke(tColors[0][tIndex],tColors[1][tIndex],tColors[2][tIndex]);
+  if (getCurrent()){
+    stroke(tColors[0][tIndex],tColors[1][tIndex],tColors[2][tIndex]); //string that can be manipulated has a color determined by the tension
+  }
+  if (getCurrent() == false){
+    stroke(150); //string that cannot be manipulated goes gray
+  }
+    
   for (float x=strStart;x<strLength+strStart;x=x+1){
     float y = yposition + getPixelMove(x,time);
     rect(x,y,1,strWeight);
@@ -460,8 +431,20 @@ textAlign(CENTER, BOTTOM);
 text("Tension = " + realTension + "N", sliderX + sliderLength/2, sliderY + 10);
 text("Length = " + realLength + "cm",sliderX + sliderLength/2, sliderY + 90);
 text("Weight = " + realWeight + "g/m",sliderX + sliderLength/2, sliderY + 170);
-text("Frequency = " + String.format("%.2f",currentFreq) + "Hz", sliderX + sliderLength/2, sliderY - 20);  
+//text("Frequency = " + String.format("%.2f",currentFreq) + "Hz", sliderX + sliderLength/2, sliderY - 20);  
+textFont(fBig,20);
+text("Move the sliders to adjust the properties of String 2.", sliderX + sliderLength/2, sliderY-30);
+}
 
+
+//sets random values for the goal string
+void setRandomValues() {
+  realTension = 70 + random(20);
+  realTension = strTension;
+  realWeight = (0.5 + random(70)*0.1);
+  strWeight = realWeight/weightFactor;
+  realLength = 5 + random(65);
+  strLength = realLength/lengthFactor;
 }
 
 //returns current attribute value as decimal for transform to int
