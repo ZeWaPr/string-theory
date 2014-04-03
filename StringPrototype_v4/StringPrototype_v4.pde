@@ -1,4 +1,5 @@
 import ddf.minim.*; //needed for sound right now, TODO: check out sound.js instead
+import g4p_controls.*;
 
 /**
 This is a attempt to combine the string and slider classes. 
@@ -6,21 +7,25 @@ This is somewhere in between almost clean and absolute mess. Sorry.
 **/
 
 //objects we'll need
-Slider slider, slider1;
-MusicString string;
+MusicString string, string1;
 ArrayList<MusicString> strings; //arraylist so user can add and remove strings whenever
-ArrayList<Slider> sliders; //have as many sliders as you want 
 
 //size of animation screen
 int boxLength = 900;
-int boxHeight = 800;
+int boxHeight = 750;
 
-//play button for matching frequency
-int triX, triY, triSide;
-color triColor, triHighlight;
-float xShift,yShift;
-boolean triOver = false;
 boolean stringOver = false;
+
+//sliders
+GCustomSlider tSdr;
+GCustomSlider lSdr;
+GCustomSlider wSdr;
+
+//slider attributes
+int sliderLength = 500;
+int sliderHeight = 50;
+int sliderX = boxLength/2 - sliderLength/2; //left edge of of sliders
+int sliderY = boxHeight - 250; // y coord of first slider
 
 //audio outputs
 Minim minim, goalMinim;
@@ -35,26 +40,59 @@ float drawingFreq = 3;
 float defaultTime = 1/(2*PI*drawingFreq);
 
 //freq to match
-float goalFreq = getRandomFreq();
+//float goalFreq = getRandomFreq();
+float goalFreq;
+PFont fSmall;
+PFont fBig;
+
+MusicString currString; //musicstring to keep track of which can currently be altered
+
+String[] objective = { "Make your string’s frequency match the Goal Frequency by only changing length." ,
+            "Make your string’s frequency match the Goal Frequency by only changing weight",
+            "Make your string’s frequency match the Goal Frequency by only changing tension" };
+
+  //2d array for tension color scale
+  float[][] tColors = new float[3][201]; //3 columns, for RGB, and 40 rows
+  float r = 0;
+  float g = 0;
+float b = 0;
+
+/*
+
+SETUP
+
+*/
 
 //musicstring to keep track of which can currently be altered
 MusicString currString; 
 
 void setup() {
-	//setup screen
+  //setup screen
   size(boxLength, boxHeight);
   background (255);
   
+<<<<<<< HEAD
 	//initialize slider(s) and musicstring(s)
   string = new MusicString(100, 0); //TODO: 100 doesn't set y position of musicString
   slider = new Slider("Length", new PVector(40, 500), string, 0);
   slider1 = new Slider("Weight", new PVector(100, 500), string, 2);
+=======
+  //initialize slider(s) and musicstring(s)
+  string = new MusicString(200);  //TODO: Make this reflect goal freq
+  string1 = new MusicString(350); 
+>>>>>>> sliders
   
   
   //initialize the list of strings
   strings = new ArrayList<MusicString>();
   strings.add(string);
+  strings.add(string1);
+
+  //generate values for goal string
+  string.setRandomValues();
+  goalFreq = getStrFreq(string.realLength, string.realTension, string.realWeight);
   
+<<<<<<< HEAD
     //set the current string
   string.setCurrent(true);
   for (MusicString ms : strings) {
@@ -67,126 +105,162 @@ void setup() {
   sliders = new ArrayList<Slider>();
   sliders.add(slider);
   sliders.add(slider1);
+=======
+  
+  //set the current string
+  string1.setCurrent(true);
+  for (MusicString ms : strings) {
+  if(ms.getCurrent()) {
+    currString = ms;
+    break;  //so there's only ever one
+  }
+  }
+>>>>>>> sliders
   
   //initialize sound outputs
   minim = new Minim(this);
   output = minim.getLineOut();
   goalMinim = new Minim(this);
   goalOutput = goalMinim.getLineOut();
+
+  tSdr = new GCustomSlider(this, sliderX, sliderY, sliderLength, sliderHeight, null);
+    //args are xpos, ypos, length, width
+  // show          opaque  ticks value limits
+  tSdr.setShowDecor(false, true, false, true);
+  tSdr.setNbrTicks(5);
+  tSdr.setLimits(70, 70, 90);
+  tSdr.setNumberFormat(G4P.DECIMAL, 1);
   
-    //initialize triangle playbutton
-  triColor = color(0,255,0);
-  triHighlight = color(0,150,0);
-  triSide = 40;
-  triX = 325; //coords of right point on triangle
-  triY = 100;
-  xShift = cos(PI/6)*triSide; //will make an equilateral triangle
-  yShift = sin(PI/6)*triSide;
+  lSdr = new GCustomSlider(this, sliderX, sliderY + 80, sliderLength, sliderHeight, null);
+    //args are xpos, ypos, length, width
+  // show          opaque  ticks value limits
+  lSdr.setShowDecor(false, true, false, true);
+  lSdr.setNbrTicks(5);
+  lSdr.setLimits(5, 10, 70);
+  lSdr.setNumberFormat(G4P.DECIMAL, 1);
+  
+  wSdr = new GCustomSlider(this, sliderX, sliderY + 160, sliderLength, sliderHeight, null);
+    //args are xpos, ypos, length, width
+  // show          opaque  ticks value limits
+  wSdr.setShowDecor(false, true, false, true);
+  wSdr.setNbrTicks(5);
+  wSdr.setLimits(0.5, 0.5, 7.5);
+  wSdr.setNumberFormat(G4P.DECIMAL, 1);
+  
+  //fonts
+   fSmall = createFont("Arial",16,true);
+  fBig = createFont("Arial",32,true);
+  
+  
+   //initialize array of tension colors, starts at blue for lowest tension and changes to red for highest tension
+  //array is 2D, column number specifies color (0=R,1=G,2=B) and row is the tension index
+  for (int k=0; k<201; k=k+1){
+    if (k<=100){
+      tColors[0][k] = 0;
+      r = 0;
+      g = k/100.;
+      b = 1-k/100.;
+      if(g>=b){
+        tColors[1][k] = 255;
+        tColors[2][k] = 255.*b/g;
+      }
+      if(g<b){
+        tColors[2][k] = 255;
+        tColors[1][k] = 255.*g/b;
+      }
+    }
+    if (k>100){
+      tColors[2][k] = 0;
+      g = 1 - (k-100.)/100.;
+      r = (k-100.)/100.;
+      if(g>=r){
+        tColors[1][k] = 255;
+        tColors[0][k] = 255.*r/g;
+      }
+      if(g<r){
+        tColors[0][k] = 255;
+        tColors[1][k] = 255.*g/r;
+      }
+      
+    }
+  }
+  
+
   
 }
 
+/*
+
+DRAW
+
+*/
 void draw() {
 
   //background color, called to wipe screen each frame
-	background(255);
-
-  //color of string and sliders
-	fill(0);
-  
-  //TODO: figure out if/how we want sliders
- 	 for (Slider s : sliders) {
-  		s.show();
-	  }
-
+  background(255);
+  textAlign(CENTER, BOTTOM);
   
  //show current value of...
-//... the slider(s) as percentage, rounded from 2 sig figs, shows up near slider
-  for( Slider s : sliders ){
-  	text(s.name + ": " + s.getPercent() + "%", s.location.x, s.location.y + s.tall + 20);
-  }
   //...the goal frequency
-	text("Goal Frequency: " + String.format("%.2f",goalFreq) + " Hz", 380,50);
-  //...the string's attributes, if there are strings
-  	if(strings.size() > 0) { 
-  		for( MusicString ms : strings ){
-  		//TODO: when multiple strings, change coordinates so no overlap
-			text("Current Length: " + String.format("%.2f",ms.realLength) + " cm", 10, 20);
-			text("Current Tension: " + ms.strTension + "N", 10, 40);
-			text("Current Weight: " + String.format("%.2f",ms.realWeight*1000) + " g/m", 10, 60);
-			text("Current Frequency: " + String.format("%.2f",ms.currentFreq) + " Hz",380,20);
-			//draws rectangles for the musicstring
-			ms.drawRectangles(ms.strLength, ms.time);
-		}
-	  }
-
-
-  //have play button change color on mouseover
-	if (overTri(triX, triY, triSide)) {
-    	fill(triHighlight);
-	} else {
-    	fill(triColor);
-	}
-	
-  //draw the play button
-	stroke(0);
-	triangle(triX,triY,triX-xShift,triY+yShift,triX-xShift,triY-yShift);
+  textFont(fBig,24);
+  text("Change String 2 to match the frequency of String 1.", boxLength/2,80);
+  textFont(fBig,16);
+  text("String 1", 100,200);
+  text("f = " + String.format("%.2f",goalFreq) + " Hz", 100,230);
+  text("String 2", 100,350);
+  text("f = " + String.format("%.2f",getStrFreq(string1.realLength, string1.realTension, string1.realWeight)) + " Hz", 100,380);
   
+  //show current objective
+//  text(objective[0], 200, 450);
+
+
+  //draws rectangles for the musicstring
+  for (MusicString ms : strings) {
+    ms.drawRectangles(ms.strLength, ms.time);
+  }
+
+  
+  //draw the play button
+  stroke(0);  
   
    //putting these in a for loop should allow multiple strings to play at once
-  	for( MusicString ms : strings) {
-		if(ms.getPlayingNote()==true){
-    		ms.time = ms.time + 1/60.;
-		 }  
-	 }
-	for (MusicString ms : strings) {   
-		if(drawIndex> ms.getStartIndex()+180){
-    		ms.playingNote = false;
-	        ms.time = defaultTime;
-		}
-	}
+    for( MusicString ms : strings) {
+    if(ms.getPlayingNote()==true){
+        ms.time = ms.time + 1/60.;
+     }  
+   }
+  for (MusicString ms : strings) {   
+    if(drawIndex> ms.getStartIndex()+180){
+        ms.playingNote = false;
+          ms.time = defaultTime;
+    }
+  }
   
+  
+  
+  currString.updateReals();
   
   //update frame counter
-	drawIndex = drawIndex + 1;
+  drawIndex = drawIndex + 1;
 
 }
 
 
-
-//checks if mouse location is over Play button
-boolean overTri(int x, int y, float xShift)  {
-  if (mouseX >= x-xShift && mouseX <= x){
-    float newYShift = (triX-mouseX)/2;
-    float yMax = y + newYShift;
-    float yMin = y - newYShift;
-    if (mouseY >= yMin && mouseY <= yMax){
-      return true;
-    } else {
-      return false;
-    }
-  } else {
-    return false;
-  }
-} 
 
 
 //When trying to draw only when needed, don't use this
 void update(int x, int y) {
-  if ( overTri(triX, triY, triSide) ) {
-    triOver = true;
-  } else {
-    triOver = false;
-  }
   
   for (MusicString ms : strings){
-	  if (ms.overMusicString()){
-    	stringOver = true;
-	  } else {
-    	stringOver = false;
-	  }
+    if (ms.overMusicString()){
+      stringOver = true;
+    } else {
+      stringOver = false;
+    }
    }
 }
 
+<<<<<<< HEAD
 void keyPressed() {
   if (keyPressed == true && key == CODED){
     //make string longer
@@ -242,119 +316,129 @@ void keyPressed() {
 }
 
 //update used in this when always drawing
+=======
+>>>>>>> sliders
 void mousePressed() {
-	//Since the mouse can only be in one location at a time, end
-	//could have achieved the same effect by putting everything in a large if-else 
-  if (overTri(triX, triY, triSide)) {
-    goalOutput.playNote(0,3,goalFreq);
-    return;	
-  }
+  //Since the mouse can only be in one location at a time, end
+  //could have achieved the same effect by putting everything in a large if-else 
 
-	for ( MusicString ms : strings){
-  		if (ms.overMusicString()) {
-   		   if(ms.playingNote == false){
-       			ms.startIndex = drawIndex;
-        		ms.playingNote = true;
-    		    output.playNote(0,3,getStrFreq(ms.realLength, ms.realTension, ms.realWeight));
-          		break;
-      		}
-  		}
- 	 }
-  for (Slider s : sliders) {
-  	if(s.overSlider()) {
-  		s.update();
-  		s.getMusicString().updateReals();
-	  	break;
-
-  	}
-  }
+  for ( MusicString ms : strings){
+      if (ms.overMusicString()) {
+          if(ms.playingNote == false){
+             ms.startIndex = drawIndex;
+            ms.playingNote = true;
+            output.playNote(0,3,getStrFreq(ms.realLength, ms.realTension, ms.realWeight));
+              break;
+          }
+      }
+    }
 
 }
 
 //Returns Frequency of String based on length, weight, and tension of string
 float getStrFreq(float len, float ten, float wei){
-  float f = sqrt(ten/wei)/(2*len/100);
+  float f = sqrt(ten/(wei/1000))/(2*len/100);
   return f;
 }
 
 //generates a random string frequency within range of values for tension, weight, and length
 float getRandomFreq(){
-  float rTension = 69 + random(22);
-  float rWeight = (0.5 + random(27)*0.25)/1000.;
-  float rLength = 12 + random(53);
+  float rTension = 70 + random(20);
+  float rWeight = (0.5 + random(27)*0.25);
+  float rLength = 10 + random(60);
   return getStrFreq(rLength, rTension,rWeight);
 }
 
+//TODO: make given string the only string that can be altered 
 void makeCurrentString(MusicString newCurrent) {
-	for (MusicString ms : strings){
-		
-	}
+  //if the given string is already the current string, leave this method
+  if (newCurrent.getCurrent()) {
+    return;
+  }
+  //get rid of "old current"
+  for (MusicString ms : strings){
+    if(ms.getCurrent()){
+      ms.setCurrent(false);
+    }
+  }
+  newCurrent.setCurrent(true);
 }
 
-//vertical sliders
-class Slider {
-  //parameters
- String name;
- //vector that hold x and y coordinates of upper left corner of slider
- PVector location;
- 
- //whether or not this slider has been clicked
- boolean pressed;
- 
- //height of slider in pixels
- int tall;
- //width of slider in pixels
- int wide;
- 
- //Music String the slider can alter
- MusicString string;
- //attribute of the Music that this slider can alter:
- // 0 -> length, 1 ->  tension, 2 -> weight
- int attribute; 
-
- //percent distance from min to max
- float currentValue;
- //visual representation of current value of slider
- PVector markerLocation;
-
-  
-  
-  //constructor
-  Slider( String n, PVector loc, MusicString ms, int attr) {
-    name = n;
-    location  = loc;
-    string = ms;
-  
-    //TOTALLY wrong way to check for valid input but this is pre-alpha
-    //SHOULD be throwing exceptions, pushed to 2.0
-    if (attr == 0 || attr == 1 || attr == 2) {
-	    attribute = attr;
-    } else {
-    	attribute = 0;
-   	}
-  
-    currentValue = ms.getCurrAttrVal(attribute); //the current value of the attr of the musicstring
-    pressed = false;
-  
-    //slider dimensions
-    tall = 120;
-    wide = 20;
-  
-    markerLocation = new PVector(location.x, location.y + ( tall * currentValue ));
-
+//returns the string that can currently be altered, defaults to first string in strings
+//TODO: does not compile, return can't live in conditional statement FIX
+MusicString getCurrentString () {
+  //TODO: can't remember the better way to do this
+  MusicString out = strings.get(0);
+  for (MusicString ms : strings) {
+    if (ms.getCurrent()){
+      out = ms;
+    } 
   }
+  return out;
+}
+
+//our strings that play sound
+class MusicString {
+
+  //string specific parameters
+  float strLength;
+  float strStart;
+  float strTension;
+  float strWeight;
+  float maxLength;
+  float minLength;
+  float maxTension;
+  float minTension;
+  float maxWeight;
+  float minWeight;
   
-  //draw the slider on screen, not called draw b/c too many draw methods already
-  void show() { 
-     rectMode(CORNER);
-    //draw body of slider, wipes out old marker
-    fill(50);
-    rect(location.x, location.y, wide, tall);
-    //draw marker for current value of slider
-    stroke(200);
-    line(markerLocation.x, markerLocation.y, markerLocation.x + wide, markerLocation.y);
-  }
+    //variables that, if we change them, we'd want them to change for all instances, probably
+  float lengthFactor; //scale factor to multiply pixels by to get length in cm
+  float weightFactor; //scale factor for string weight
+
+  float realLength;
+  float realWeight;
+  float realTension;
+  float currentFreq;
   
+
+  float time;
+
+  int startIndex;
+
+  boolean playingNote;
+  int n;
+
+  
+  int fillColor;      //the color of the string
+  boolean current;    //whether or not this string can currently be altered
+  int yposition;  //where on screen the string appears
+  int tIndex = 0;
+
+//constructor
+MusicString (int ypos){  
+   //string specific parameter
+  strLength = 200;
+  maxLength = 500; //max length of string in pixels
+  strStart = (boxLength/2 - maxLength/2); // string is now centered correctly -LW 
+  strTension = 70; //don't know what units we want this in
+  strWeight = 1;
+  minLength = 100;
+  maxTension = 90;
+  minTension = 70;
+  maxWeight = 14;
+  minWeight = 1.5;
+  
+    //variables that, if we change them, we'd want them to change for all instances, probably
+  lengthFactor = 70/maxLength; //scale factor to multiply pixels by to get length in cm
+  weightFactor = .5; //scale factor for string weight
+
+  realLength = strLength*lengthFactor;
+  realWeight = strWeight*weightFactor;
+  realTension = strTension;
+  currentFreq = getStrFreq(realLength, realTension, realWeight);
+  
+<<<<<<< HEAD
     
   //updates the slider and it's associated string, TODO: Only adjusts length right now
   void update() {
@@ -416,45 +500,17 @@ boolean overSlider(){
  }
  
 }
+=======
+>>>>>>> sliders
 
+  time = defaultTime;
 
-//our strings that play sound
-class MusicString {
+  startIndex = 0; //frame when the note starts playing
 
-  //string specific parameters
-	float strLength;
-	float strStart;
-	float strTension;
-	float strWeight;
-	float maxLength;
-	float minLength;
-	float maxTension;
-	float minTension;
-	float maxWeight;
-	float minWeight;
-	
-	  //variables that, if we change them, we'd want them to change for all instances, probably
-	float lengthFactor; //scale factor to multiply pixels by to get length in cm
-	float weightFactor; //scale factor for string weight
+  playingNote = false;
+  n = 1; //harmonic number
 
-	float realLength;
-	float realWeight;
-	float realTension;
-	float currentFreq;
-	
-
-	float time;
-
-	int startIndex;
-
-	boolean playingNote;
-	int n;
-
-	
-	int fillColor;			//the color of the string
-	boolean current;		//whether or not this string can currently be altered
-	PVector startPosition;	//where on screen the string appears
-
+<<<<<<< HEAD
 //constructor
 MusicString (int ypos, int fc){	
 	 //string specific parameters
@@ -490,6 +546,12 @@ MusicString (int ypos, int fc){
 	fillColor = fc;			//the color of the string
 	current = false;		//whether or not this string can currently be altered
  int yposition = ypos; //on screen y position of string	
+=======
+  
+  current = false;    //whether or not this string can currently be altered
+  yposition = ypos; //on screen y position of string  
+  
+>>>>>>> sliders
 }
 
 
@@ -499,7 +561,7 @@ MusicString (int ypos, int fc){
 //checks if mouse location is on or near enough to MusicString
 //TODO: make it easier to click the string
 boolean overMusicString()  {
-  if (mouseX >= strStart && mouseX <= strStart+strLength && mouseY >= boxHeight/2-strWeight + 10 && mouseY <= boxHeight/2+strWeight + 10){
+  if (mouseX >= strStart && mouseX <= strStart+strLength && mouseY >= yposition-strWeight - 20 && mouseY <= yposition+strWeight + 20){
     return true;
     } else {
     return false;
@@ -520,40 +582,72 @@ float getPixelMove(float x, float t){
 
 //draw rectangles that make up the string
 void drawRectangles(float strLength, float time){
-	rectMode(CENTER);
-	stroke(0);
+  rectMode(CENTER);
+  tIndex = int(10*(strTension-70));
+  if (getCurrent()){
+    stroke(tColors[0][tIndex],tColors[1][tIndex],tColors[2][tIndex]); //string that can be manipulated has a color determined by the tension
+  }
+  if (getCurrent() == false){
+    stroke(150); //string that cannot be manipulated goes gray
+  }
+    
   for (float x=strStart;x<strLength+strStart;x=x+1){
-    fill(0);
-    //float y = (boxHeight/2);
-    float y = (boxHeight/2) + getPixelMove(x,time);
+    float y = yposition + getPixelMove(x,time);
     rect(x,y,1,strWeight);
   } 
 }
 
 
 void updateReals() {
-	realLength = strLength*lengthFactor;
-	realWeight = strWeight*weightFactor;
-	realTension = strTension;
-	currentFreq = getStrFreq(realLength, realTension, realWeight);
+  strTension = round(tSdr.getValueF()*10.)/10.;
+realTension = strTension;
+
+realWeight = round(wSdr.getValueF()*10.)/10.;
+strWeight = realWeight/weightFactor;
+
+realLength = round(lSdr.getValueF()*10.)/10.;
+strLength = realLength/lengthFactor;
+
+currentFreq = getStrFreq(realLength, realTension, realWeight);
+
+fill(0);
+textFont(fBig,16);
+textAlign(CENTER, BOTTOM);
+text("Tension = " + realTension + "N", sliderX + sliderLength/2, sliderY + 10);
+text("Length = " + realLength + "cm",sliderX + sliderLength/2, sliderY + 90);
+text("Weight = " + realWeight + "g/m",sliderX + sliderLength/2, sliderY + 170);
+//text("Frequency = " + String.format("%.2f",currentFreq) + "Hz", sliderX + sliderLength/2, sliderY - 20);  
+textFont(fBig,20);
+text("Move the sliders to adjust the properties of String 2.", sliderX + sliderLength/2, sliderY-30);
+}
+
+
+//sets random values for the goal string
+void setRandomValues() {
+  realTension = 70 + random(20);
+  realTension = strTension;
+  realWeight = (0.5 + random(70)*0.1);
+  strWeight = realWeight/weightFactor;
+  realLength = 5 + random(65);
+  strLength = realLength/lengthFactor;
 }
 
 //returns current attribute value as decimal for transform to int
 float getCurrAttrVal(int attrNum) {
-	float currAttrVal = 0.5;
-	if (attrNum == 0){
-		//length
-		currAttrVal = (strLength - minLength) / (maxLength - minLength); //my math could be wrong
-	} else if (attrNum == 1) {
-		//tension
-		currAttrVal = (strTension - minTension) / (maxTension - minTension); //my math could be wrong
-	} else if (attrNum == 2) {
-		//weight
-		currAttrVal = (strWeight - minWeight) / (maxWeight - minWeight); //my math could be wrong
-	}
-	return currAttrVal;
+  float currAttrVal = 0.5;
+  if (attrNum == 0){
+    //length
+    currAttrVal = (strLength - minLength) / (maxLength - minLength); //my math could be wrong
+  } else if (attrNum == 1) {
+    //tension
+    currAttrVal = (strTension - minTension) / (maxTension - minTension); //my math could be wrong
+  } else if (attrNum == 2) {
+    //weight
+    currAttrVal = (strWeight - minWeight) / (maxWeight - minWeight); //my math could be wrong
+  }
+  return currAttrVal;
 }
-	
+  
 
 /** GETTERS AND SETTERS */   
    
@@ -642,8 +736,13 @@ float getLengthFactor(){
 float getWeightFactor() {
   return weightFactor;
 }
+<<<<<<< HEAD
 
 	
+=======
+  
+>>>>>>> sliders
 }
  
+
 
