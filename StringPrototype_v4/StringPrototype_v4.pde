@@ -1,10 +1,11 @@
 import ddf.minim.*; //needed for sound right now, TODO: check out sound.js instead
 import g4p_controls.*;
-
 /**
-This is a attempt to combine the string and slider classes. 
-This is somewhere in between almost clean and absolute mess. Sorry.
-**/
+* When refereing to attributes (length, weight, tension) by number, try to use following convention
+* Tension = 1
+* Length = 2
+* Weight = 3
+*/
 
 //objects we'll need
 MusicString string, string1;
@@ -101,7 +102,7 @@ void setup() {
   tSdr = new GCustomSlider(this, sliderX, sliderY, sliderLength, sliderHeight, null);
     //args are xpos, ypos, length, width
   // show          opaque  ticks value limits
-  tSdr.setShowDecor(false, true, false, true);
+  tSdr.setShowDecor(false, true, false, true); //TODO: Can we show which sliders are active or not with this?
   tSdr.setNbrTicks(5);
   tSdr.setLimits(70, 70, 90);
   tSdr.setNumberFormat(G4P.DECIMAL, 1);
@@ -174,7 +175,7 @@ void draw() {
   //background color, called to wipe screen each frame
   background(255);
   textAlign(CENTER, BOTTOM);
-  
+
  //show current value of...
   //...the goal frequency
   textFont(fBig,24);
@@ -212,8 +213,8 @@ void draw() {
   }
   
   
-  
-  currString.updateReals();
+  //TODO: this is brute force right now, we need to change this to pass in number based on which level we are on
+  currString.updateReals(1);
   
   //update frame counter
   drawIndex = drawIndex + 1;
@@ -414,28 +415,48 @@ void drawRectangles(float strLength, float time){
 }
 
 
-void updateReals() {
-  strTension = round(tSdr.getValueF()*10.)/10.;
-realTension = strTension;
+void updateReals(int attribute) {
+    switch (attribute) {
+    case 1:
+      strTension = round(tSdr.getValueF() * 10.) / 10.;
+      realTension = strTension;
+      break;
+    case 2:
+      realLength = round(lSdr.getValueF() * 10.) / 10.;
+      strLength = realLength / lengthFactor;
+      break;
+    case 3:
+      realWeight = round(wSdr.getValueF() * 10.) / 10.;
+      strWeight = realWeight / weightFactor;
+      break;
+    case 4:
+      strTension = round(tSdr.getValueF() * 10.) / 10.;
+      realTension = strTension;
 
-realWeight = round(wSdr.getValueF()*10.)/10.;
-strWeight = realWeight/weightFactor;
+      realWeight = round(wSdr.getValueF() * 10.) / 10.;
+      strWeight = realWeight / weightFactor;
 
-realLength = round(lSdr.getValueF()*10.)/10.;
-strLength = realLength/lengthFactor;
+      realLength = round(lSdr.getValueF() * 10.) / 10.;
+      strLength = realLength / lengthFactor;
+      break;
+    }
 
-currentFreq = getStrFreq(realLength, realTension, realWeight);
+    currentFreq = getStrFreq(realLength, realTension, realWeight);
 
-fill(0);
-textFont(fBig,16);
-textAlign(CENTER, BOTTOM);
-text("Tension = " + realTension + "N", sliderX + sliderLength/2, sliderY + 10);
-text("Length = " + realLength + "cm",sliderX + sliderLength/2, sliderY + 90);
-text("Weight = " + realWeight + "g/m",sliderX + sliderLength/2, sliderY + 170);
-//text("Frequency = " + String.format("%.2f",currentFreq) + "Hz", sliderX + sliderLength/2, sliderY - 20);  
-textFont(fBig,20);
-text("Move the sliders to adjust the properties of String 2.", sliderX + sliderLength/2, sliderY-30);
-}
+    fill(0);
+    textFont(fBig, 16);
+    textAlign(CENTER, BOTTOM);
+    text("Tension = " + realTension + "N", sliderX + sliderLength / 2,
+        sliderY + 10);
+    text("Length = " + realLength + "cm", sliderX + sliderLength / 2,
+        sliderY + 90);
+    text("Weight = " + realWeight + "g/m", sliderX + sliderLength / 2,
+        sliderY + 170);
+    textFont(fBig, 20);
+    text("Move the sliders to adjust the properties of String 2.", sliderX
+        + sliderLength / 2, sliderY - 30);
+  }
+
 
 
 //sets random values for the goal string
@@ -451,13 +472,13 @@ void setRandomValues() {
 //returns current attribute value as decimal for transform to int
 float getCurrAttrVal(int attrNum) {
   float currAttrVal = 0.5;
-  if (attrNum == 0){
+  if (attrNum == 2){
     //length
     currAttrVal = (strLength - minLength) / (maxLength - minLength); //my math could be wrong
   } else if (attrNum == 1) {
     //tension
     currAttrVal = (strTension - minTension) / (maxTension - minTension); //my math could be wrong
-  } else if (attrNum == 2) {
+  } else if (attrNum == 3) {
     //weight
     currAttrVal = (strWeight - minWeight) / (maxWeight - minWeight); //my math could be wrong
   }
