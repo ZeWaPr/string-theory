@@ -63,24 +63,14 @@ SETUP
 
 */
 
-//musicstring to keep track of which can currently be altered
-MusicString currString; 
-
 void setup() {
   //setup screen
   size(boxLength, boxHeight);
   background (255);
   
-<<<<<<< HEAD
-	//initialize slider(s) and musicstring(s)
-  string = new MusicString(100, 0); //TODO: 100 doesn't set y position of musicString
-  slider = new Slider("Length", new PVector(40, 500), string, 0);
-  slider1 = new Slider("Weight", new PVector(100, 500), string, 2);
-=======
   //initialize slider(s) and musicstring(s)
   string = new MusicString(200);  //TODO: Make this reflect goal freq
   string1 = new MusicString(350); 
->>>>>>> sliders
   
   
   //initialize the list of strings
@@ -92,20 +82,6 @@ void setup() {
   string.setRandomValues();
   goalFreq = getStrFreq(string.realLength, string.realTension, string.realWeight);
   
-<<<<<<< HEAD
-    //set the current string
-  string.setCurrent(true);
-  for (MusicString ms : strings) {
-  if(ms.getCurrent()) {
-    currString = ms;
-  }
-  }
-  
-  //initialize the list of sliders
-  sliders = new ArrayList<Slider>();
-  sliders.add(slider);
-  sliders.add(slider1);
-=======
   
   //set the current string
   string1.setCurrent(true);
@@ -115,7 +91,6 @@ void setup() {
     break;  //so there's only ever one
   }
   }
->>>>>>> sliders
   
   //initialize sound outputs
   minim = new Minim(this);
@@ -206,9 +181,9 @@ void draw() {
   text("Change String 2 to match the frequency of String 1.", boxLength/2,80);
   textFont(fBig,16);
   text("String 1", 100,200);
-  text("f = " + String.format("%.2f",goalFreq) + " Hz", 100,230);
+  text("f = " + String.format("%.0f",goalFreq) + " Hz", 100,230);
   text("String 2", 100,350);
-  text("f = " + String.format("%.2f",getStrFreq(string1.realLength, string1.realTension, string1.realWeight)) + " Hz", 100,380);
+  text("f = " + String.format("%.0f",getStrFreq(string1.realLength, string1.realTension, string1.realWeight)) + " Hz", 100,380);
   
   //show current objective
 //  text(objective[0], 200, 450);
@@ -260,64 +235,6 @@ void update(int x, int y) {
    }
 }
 
-<<<<<<< HEAD
-void keyPressed() {
-  if (keyPressed == true && key == CODED){
-    //make string longer
-  if(keyCode == RIGHT && currString.getStrLength() <= currString.getMaxLength()){
-    currString.setStrLength(  currString.getStrLength() + 250./65. );    
-    currString.setRealLength( currString.getStrLength() * currString.getLengthFactor() );
-    currString.strStart = (boxLength/2 - currString.getStrLength()/2);
-  }
-
-  //shorten string
-  if(keyCode == LEFT && currString.getStrLength() >= currString.getMinLength()){
-    currString.setStrLength(  currString.getStrLength() - 250./65. );    
-    currString.setRealLength( currString.getStrLength() * currString.getLengthFactor() );
-    currString.strStart = (boxLength/2 - currString.getStrLength()/2);
-  }
-
- //increase tension
-  if (keyCode == CONTROL && currString.getStrTension() <= currString.getMaxTension()) {
-    currString.setStrTension( currString.getStrTension() + .5 );
-    currString.setRealTension( currString.getStrTension() );
-  }
- 
-  //decrease tension
-  if(keyCode == ALT && currString.getStrTension() >= currString.getMinTension() ) {
-    currString.setStrTension( currString.getStrTension() - .5 );
-    currString.setRealTension( currString.getStrTension() );
-  }  
-  
-  //increase weight
-  //want weight to range from .0005 to .007 in kg/m
-  if (keyCode == UP && currString.getStrWeight() <= currString.getMaxWeight()) {
-    currString.setStrWeight( currString.getStrWeight() + 0.25 );
-    currString.setRealWeight( currString.getStrWeight() * currString.getWeightFactor() );
-  }
-
-  //decrease weight
-  if (keyCode == DOWN && currString.getStrWeight() >= currString.getMinWeight()) {
-    currString.setStrWeight( currString.getStrWeight() - 0.25 );
-    currString.setRealWeight( currString.getStrWeight() * currString.getWeightFactor() );
-  }    
-
-  
-  if(keyCode == SHIFT) {
-  for (MusicString ms : strings ){
-    if(ms.playingNote == false){
-       ms.startIndex = drawIndex;
-       ms.playingNote = true;
-       output.playNote(0,3,getStrFreq(ms.realLength, ms.realTension, ms.realWeight));
-      }
-  }
-  }
-}
-}
-
-//update used in this when always drawing
-=======
->>>>>>> sliders
 void mousePressed() {
   //Since the mouse can only be in one location at a time, end
   //could have achieved the same effect by putting everything in a large if-else 
@@ -327,7 +244,8 @@ void mousePressed() {
           if(ms.playingNote == false){
              ms.startIndex = drawIndex;
             ms.playingNote = true;
-            output.playNote(0,3,getStrFreq(ms.realLength, ms.realTension, ms.realWeight));
+            //freq is rounded to whole number when it is output
+            output.playNote(0,3,round(getStrFreq(ms.realLength, ms.realTension, ms.realWeight)*100.)/100.);
               break;
           }
       }
@@ -438,70 +356,6 @@ MusicString (int ypos){
   realTension = strTension;
   currentFreq = getStrFreq(realLength, realTension, realWeight);
   
-<<<<<<< HEAD
-    
-  //updates the slider and it's associated string, TODO: Only adjusts length right now
-  void update() {
-      
-      //move marker on screen
-      markerLocation.y = mouseY;
-      
-      //adjust current value to reflect marker location
-      currentValue = 1 - ((markerLocation.y - location.y) / tall);
-      
-      //change associated musicstring's correct attribute to match new current value
-      if (attribute == 0) {
-      	//length
-      	//TODO: check if this formula works
-      	string.setStrLength( (string.getMaxLength() - string.getMinLength()) * currentValue + string.getMinLength() );
-      } else if( attribute == 1) {
-	      //tension
-		string.setStrTension( (string.getMaxTension() - string.getMinTension()) * currentValue + string.getMinTension() );
-      } else if (attribute == 2) {
-	      	//weight
-		string.setStrWeight( (string.getMaxWeight() - string.getMinWeight()) * currentValue + string.getMinWeight() );
-      }
-	  show();
-  }
-
-//true if mouse position is over slider
-boolean overSlider(){
-	boolean tf = false;
-  if (mouseX >= location.x && mouseX <= location.x + wide && mouseY >= location.y && mouseY <= location.y + tall){
-        tf = true;
-    }
-    return tf;
-}
-
-//if THIS slider was clicked on, return TRUE
- boolean isPressed(){
-   boolean p = false;
-    if(mousePressed == true) {
-      if (mouseX > location.x && mouseX < location.x + wide && mouseY > location.y && mouseY < location.y + tall){
-        p = true;
-      }
-    }
-    return p;
- }
- 
- float getCurrVal(){
-   return currentValue;
- }
- 
- //returns value of slider as a percentage
-   int getPercent(){
-    //float val = currentValue * 100;
-    int percent = Math.round(currentValue * 100);
-    return percent;
-  }
- 
- MusicString getMusicString() {
- 	return string;
- }
- 
-}
-=======
->>>>>>> sliders
 
   time = defaultTime;
 
@@ -510,48 +364,10 @@ boolean overSlider(){
   playingNote = false;
   n = 1; //harmonic number
 
-<<<<<<< HEAD
-//constructor
-MusicString (int ypos, int fc){	
-	 //string specific parameters
-	strLength = 200;
-	strStart = (boxLength/2 - strLength/2); //TODO: doesn't center string like it should
-	strTension = 70; //don't know what units we want this in
-	strWeight = 1;
-	maxLength = 500; //max length of string in pixels
-	minLength = 100;
-	maxTension = 90;
-	minTension = 70;
-	maxWeight = 14;
-	minWeight = 1.5;
-	
-	  //variables that, if we change them, we'd want them to change for all instances, probably
-	lengthFactor = 65/maxLength; //scale factor to multiply pixels by to get length in cm
-	weightFactor = .5/1000; //scale factor for string weight
-
-	realLength = strLength*lengthFactor;
-	realWeight = strWeight*weightFactor;
-	realTension = strTension;
-	currentFreq = getStrFreq(realLength, realTension, realWeight);
-	
-
-	time = defaultTime;
-
-	startIndex = 0; //frame when the note starts playing
-
-	playingNote = false;
-	n = 1; //harmonic number
-
-	
-	fillColor = fc;			//the color of the string
-	current = false;		//whether or not this string can currently be altered
- int yposition = ypos; //on screen y position of string	
-=======
   
   current = false;    //whether or not this string can currently be altered
   yposition = ypos; //on screen y position of string  
   
->>>>>>> sliders
 }
 
 
@@ -628,7 +444,7 @@ void setRandomValues() {
   realTension = strTension;
   realWeight = (0.5 + random(70)*0.1);
   strWeight = realWeight/weightFactor;
-  realLength = 5 + random(65);
+  realLength = 10 + random(60);
   strLength = realLength/lengthFactor;
 }
 
@@ -650,7 +466,6 @@ float getCurrAttrVal(int attrNum) {
   
 
 /** GETTERS AND SETTERS */   
-   
    
 void setCurrent(boolean tf){
   current = tf;
@@ -736,12 +551,7 @@ float getLengthFactor(){
 float getWeightFactor() {
   return weightFactor;
 }
-<<<<<<< HEAD
-
-	
-=======
   
->>>>>>> sliders
 }
  
 
