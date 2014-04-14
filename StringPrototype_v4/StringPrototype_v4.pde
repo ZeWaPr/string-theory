@@ -58,7 +58,7 @@ String[] endMess = {"Congratulations", "Congratulations"};
   float[][] tColors = new float[3][201]; //3 columns, for RGB, and 40 rows
   float r = 0;
   float g = 0;
-float b = 0;
+  float b = 0;
 
 
 int currLevel;
@@ -205,7 +205,7 @@ void draw() {
   //  text("f = " + String.format("%.0f",goalFreq) + " Hz", 100,230);
   text("f = " + String.format("%.0f",string.getFreq()) + " Hz", 100,230);
   text("String 2", 100,350);
-  text("f = " + String.format("%.0f",getStrFreq(string1.realLength, string1.realTension, string1.realWeight)) + " Hz", 100,380);
+  text("f = " + String.format("%.0f",string1.getFreq()) + " Hz", 100,380);
   
   //show current objective
 //  text(objective[0], 200, 450);
@@ -495,6 +495,7 @@ void setRandomValues() {
   strWeight = realWeight/weightFactor;
   realLength = 10 + random(60);
   strLength = realLength/lengthFactor;
+  currentFreq = getStrFreq(realLength,realTension,realWeight);
 }
 
 //returns current attribute value as decimal for transform to int
@@ -687,5 +688,3 @@ public class Level {
 
   }
 }
-
-
