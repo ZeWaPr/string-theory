@@ -462,7 +462,7 @@ void updateReals(int attribute) {
 //sets random values for the goal string
 void setRandomValues() {
   realTension = 70 + random(20);
-  realTension = strTension;
+  strTension = realTension;
   realWeight = (0.5 + random(70)*0.1);
   strWeight = realWeight/weightFactor;
   realLength = 10 + random(60);
