@@ -179,9 +179,9 @@ void setup() {
   levels[1] = level2;
   levels[2] = level3;
   
-  currLevel = 1;
+  currLevel = 0;
 
-  
+  currString.makeRatioPossible(string.getRealTension(),string.getRealLength(), string.getRealWeight(),levels[currLevel].whichSliders());
 }
 
 /*
@@ -237,11 +237,17 @@ void draw() {
   //TODO: this is brute force right now, we need to change this to pass in number based on which level we are on
   currString.updateReals(levels[currLevel].whichSliders());
   
-  if (levels[currLevel].hasWon() && levels[currLevel].getLevelNum() < levels.length) {
+  //subtracting 1 from levels.length stops the code from breaking, and I can still get to all 3 levels
+  if (levels[currLevel].hasWon() && levels[currLevel].getLevelNum() < levels.length - 1) {
       levels[currLevel].showEndMess();
       //TODO: delay so end mess is visible
       currLevel++;  //TODO: supes inefficient
       //currLevel = levels[2];
+      //this resets the goal frequency after a level is won
+      string.setRandomValues();
+      goalFreq = getStrFreq(string.realLength, string.realTension, string.realWeight);
+      //this adjusts the current string so that the level is winnable, needs to be edited
+      currString.makeRatioPossible(string.getRealTension(),string.getRealLength(), string.getRealWeight(),levels[currLevel].whichSliders());
   }
   
   //update frame counter
@@ -338,6 +344,12 @@ class MusicString {
   float minTension;
   float maxWeight;
   float minWeight;
+  float maxRealLength;
+  float minRealLength;
+  float maxRealTension;
+  float minRealTension;
+  float maxRealWeight;
+  float minRealWeight;
   
     //variables that, if we change them, we'd want them to change for all instances, probably
   float lengthFactor; //scale factor to multiply pixels by to get length in cm
@@ -375,6 +387,13 @@ MusicString (int ypos){
   minTension = 70;
   maxWeight = 14;
   minWeight = 1.5;
+  
+  minRealLength = 10;
+  maxRealLength = 70;
+  minRealTension = 70;
+  maxRealTension = 90;
+  minRealWeight = 0.5;
+  maxRealWeight = 7.5;
   
     //variables that, if we change them, we'd want them to change for all instances, probably
   lengthFactor = 70/maxLength; //scale factor to multiply pixels by to get length in cm
@@ -433,7 +452,8 @@ void drawRectangles(float strLength, float time){
     stroke(tColors[0][tIndex],tColors[1][tIndex],tColors[2][tIndex]); //string that can be manipulated has a color determined by the tension
   }
   if (getCurrent() == false){
-    stroke(150); //string that cannot be manipulated goes gray
+    stroke(tColors[0][tIndex],tColors[1][tIndex],tColors[2][tIndex]); //string that can be manipulated has a color determined by the tension
+    //stroke(150); //string that cannot be manipulated goes gray
   }
     
   for (float x=strStart;x<strLength+strStart;x=x+1){
@@ -442,12 +462,74 @@ void drawRectangles(float strLength, float time){
   } 
 }
 
+//this sets the current string to have attributes that make the level winnable, ie the variable they are adjusting will fall within the settable range
+void makeRatioPossible(float goalRealTension, float goalRealLength, float goalRealWeight, int attribute) {
+      float tempTension = 1.;
+      float tempLength = 1.;
+      float tempWeight = 1.;
+      float targetFreq = goalFreq/(levels[currLevel].ratio); //this is the frequency you want the current string set to, this should work for the harmony levels as well
+      boolean matchPossible = false;
+      
+  switch(attribute) {
+    case 1:
+      //tension constant
+      //cycle through random pairs of length and weight until the correct tension falls in the settable range
+      while(matchPossible==false) {
+        tempLength = minRealLength + random(60);
+        tempWeight = minRealWeight + random(70)*0.1;
+        tempTension = (tempWeight/1000)*pow((2*(tempLength/100)*targetFreq),2);
+        if ((tempTension>=minRealTension) && (tempTension<=maxRealTension)) {
+          matchPossible = true;
+        }
+      }
+      //added round statements so that these will display correctly on the slider panel (without so many decimal places
+      realLength = round(tempLength*10.)/10.;
+      strLength = realLength / lengthFactor;
+      realWeight = round(tempWeight*10.)/10.;
+      strWeight = realWeight / weightFactor;
+      break;
+    case 2:
+      //length constant
+      //cycle through random pairs of tension and weight until the correct length falls in the settable range
+      while(matchPossible==false) {
+        tempTension = minRealTension + random(20);
+        tempWeight = minRealWeight + random(70)*0.1;
+        tempLength = 100*(1/(2*targetFreq))*pow((tempTension/(tempWeight/1000)),0.5);
+        if ((tempLength>=minRealLength) && (tempLength<=maxRealLength)) {
+          matchPossible = true;
+        }
+      }
+      realTension = round(tempTension*10.)/10.;
+      strTension = realTension;
+      realWeight = round(tempWeight*10.)/10.;
+      strWeight = realWeight / weightFactor;
+      break;         
+    case 3:
+      //weight constant
+      //cycle through random pairs of tension and length until the correct weight falls in the settable range
+      while(matchPossible==false) {
+        tempTension = minRealTension + random(20);
+        tempLength = minRealLength + random(60);
+        tempWeight = 1000*tempTension*pow((1/(2*tempLength*targetFreq/100)),2);
+        if ((tempWeight>=minRealWeight) && (tempWeight<=maxRealWeight)) {
+          matchPossible = true;
+        }
+      }
+      realTension = round(tempTension*10.)/10.;
+      strTension = realTension;
+      realLength = round(tempLength*10.)/10.;
+      strLength = realLength / lengthFactor;
+      break;    
+    case 4:
+      break;
+  }
+}
 
 void updateReals(int attribute) {
     switch (attribute) {
     case 1:
-      strTension = round(tSdr.getValueF() * 10.) / 10.;
-      realTension = strTension;
+      realTension = round(tSdr.getValueF() * 10.) / 10.;
+      strTension = realTension;
       break;
     case 2:
       realLength = round(lSdr.getValueF() * 10.) / 10.;
@@ -490,10 +572,13 @@ void updateReals(int attribute) {
 //sets random values for the goal string
 void setRandomValues() {
   realTension = 70 + random(20);
+  realTension = round(realTension*10.)/10.;
   strTension = realTension;
   realWeight = (0.5 + random(70)*0.1);
+  realWeight = round(realWeight*10.)/10.;
   strWeight = realWeight/weightFactor;
   realLength = 10 + random(60);
+  realLength = round(realLength*10.)/10.;
   strLength = realLength/lengthFactor;
   currentFreq = getStrFreq(realLength,realTension,realWeight);
 }
@@ -568,6 +653,18 @@ float getStrWeight(){
 
 float getStrTension(){
   return strTension;
+}
+
+float getRealLength(){
+  return realLength;
+}
+ 
+float getRealWeight(){
+  return realWeight;
+}
+
+float getRealTension(){
+  return realTension;
 }
 
 float getMaxLength(){
