@@ -1,11 +1,14 @@
 import ddf.minim.*; //needed for sound right now, TODO: check out sound.js instead
 import g4p_controls.*;
+
 /**
-* When refereing to attributes (length, weight, tension) by number, try to use following convention
+* When refereing to attributes (length, weight, tension) by number, use following convention
 * Tension = 1
 * Length = 2
 * Weight = 3
 */
+
+//TODO: make so player can't change frequency of note while string is playing
 
 //objects we'll need
 MusicString string, string1;
@@ -45,14 +48,16 @@ float defaultTime = 1/(2*PI*drawingFreq);
 float goalFreq;
 PFont fSmall;
 PFont fBig;
+PFont fWin;
 
 MusicString currString; //musicstring to keep track of which can currently be altered
 
-String[] objective = { "Make your string’s frequency match the Goal Frequency by only changing tension." ,
-            "Make your string’s frequency match the Goal Frequency by only changing length",
-            "Make your string’s frequency match the Goal Frequency by only changing weight" };
+String[] objective = { "Make the frequency of String 2 match String 1 by only changing Tension.\n Play both strings at the same time to advance." ,
+            "Make the frequency of String 2 match String 1 by only changing Length.\n Play both strings at the same time to advance.",
+            "Make the frequency of String 2 match String 1 by only changing Weight.\n Play both strings at the same time to advance.", 
+            "Make the frequency of String 2 match String 1 by only changing any of the variables.\n Play both strings at the same time to finish." };
 
-String[] endMess = {"Congratulations", "Congratulations"};
+String[] endMess = {"Congratulations!!!", "Congratulations!!!", "Congratulations!!!", "Congratulations!!!"};
 
   //2d array for tension color scale
   float[][] tColors = new float[3][201]; //3 columns, for RGB, and 40 rows
@@ -62,8 +67,8 @@ String[] endMess = {"Congratulations", "Congratulations"};
 
 
 int currLevel;
-Level[] levels = new Level[3];  //TODO: number of levels should NOT be hardcoded like this
-
+Level[] levels = new Level[4];  //TODO: number of levels should NOT be hardcoded like this
+int winTime;
 
 /*
 
@@ -133,6 +138,7 @@ void setup() {
   //fonts
    fSmall = createFont("Arial",16,true);
   fBig = createFont("Arial",32,true);
+  fWin = createFont("Arial", 50, true);
   
   
    //initialize array of tension colors, starts at blue for lowest tension and changes to red for highest tension
@@ -170,14 +176,16 @@ void setup() {
  
  
  //TODO: find a better way to initialize levels than this 
- Level level1, level2, level3;
+ Level level1, level2, level3, level4;
  level1 = new Level(0, 1., objective[0], endMess[0], string, string1);
  level2 = new Level(1, 1., objective[1], endMess[1], string, string1);
- level3 = new Level(2, 1., objective[2], endMess[1], string, string1);
+ level3 = new Level(2, 1., objective[2], endMess[2], string, string1);
+ level4 = new Level(3, 1., objective[3], endMess[3], string, string1);
   
   levels[0] = level1;
   levels[1] = level2;
   levels[2] = level3;
+  levels[3] = level4;
   
   currLevel = 0;
 
@@ -234,15 +242,21 @@ void draw() {
   }
   
   
-  //TODO: this is brute force right now, we need to change this to pass in number based on which level we are on
   currString.updateReals(levels[currLevel].whichSliders());
   
   //subtracting 1 from levels.length stops the code from breaking, and I can still get to all 3 levels
   if (levels[currLevel].hasWon() && levels[currLevel].getLevelNum() < levels.length - 1) {
-      levels[currLevel].showEndMess();
-      //TODO: delay so end mess is visible
+      winTime = millis();
+      //TODO: fix delay, commented out for now
+      //why is it waiting 3 seconds and THEN showing the end message?
+//       showEndMess(levels[currLevel].getEndMessage());      
+//       while(millis() - winTime < 3000){
+//        //do nothing
+//     }
+
+      
       currLevel++;  //TODO: supes inefficient
-      //currLevel = levels[2];
+
       //this resets the goal frequency after a level is won
       string.setRandomValues();
       goalFreq = getStrFreq(string.realLength, string.realTension, string.realWeight);
@@ -329,6 +343,14 @@ MusicString getCurrentString () {
   }
   return out;
 }
+
+  public void showEndMess(String endMessage){
+  background(0);
+  fill(10, 200, 10);
+  textFont(fWin);
+    text(endMessage, boxLength/2, boxHeight / 2);
+  }
+
 
 //our strings that play sound
 class MusicString {
@@ -526,6 +548,7 @@ void makeRatioPossible(float goalRealTension, float goalRealLength, float goalRe
 }
 
 void updateReals(int attribute) {
+  if(!playingNote){  //added this check so user can't change freq of note while it's playing
     switch (attribute) {
     case 1:
       realTension = round(tSdr.getValueF() * 10.) / 10.;
@@ -549,19 +572,12 @@ void updateReals(int attribute) {
       realLength = round(lSdr.getValueF() * 10.) / 10.;
       strLength = realLength / lengthFactor;
       break;
+      }
     }
 
     currentFreq = getStrFreq(realLength, realTension, realWeight);
 
-    fill(0);
-    textFont(fBig, 16);
-    textAlign(CENTER, BOTTOM);
-    text("Tension = " + realTension + "N", sliderX + sliderLength / 2,
-        sliderY + 10);
-    text("Length = " + realLength + "cm", sliderX + sliderLength / 2,
-        sliderY + 90);
-    text("Weight = " + realWeight + "g/m", sliderX + sliderLength / 2,
-        sliderY + 170);
+  
     textFont(fBig, 20);
  //   text("Move the sliders to adjust the properties of String 1.", sliderX
    //     + sliderLength / 2, sliderY - 30);
@@ -739,13 +755,14 @@ public class Level {
    * @return
    */
   public boolean hasWon() {
-  
-    text("Ratio: " + goal.getFreq() / controlled.getFreq(), 100, 100);
-    text("goal: " + goal.getFreq(), 100, 120);
-    text("control: " + controlled.getFreq(), 100, 140);
-    text("goal ten: " + string.realTension, 400, 100);
-    text("goal len: " + string.realLength, 400, 120);
-    text("goal wei: " + string.realWeight, 400, 140);
+
+//for debugging tension match  
+//     text("Ratio: " + goal.getFreq() / controlled.getFreq(), 100, 100);
+//     text("goal: " + goal.getFreq(), 100, 120);
+//     text("control: " + controlled.getFreq(), 100, 140);
+//     text("goal ten: " + string.realTension, 400, 100);
+//     text("goal len: " + string.realLength, 400, 120);
+//     text("goal wei: " + string.realWeight, 400, 140);
     
     boolean hasWon = false;
     if (goal.getPlayingNote() && controlled.getPlayingNote()) {
@@ -757,13 +774,64 @@ public class Level {
     }
     return hasWon;
   }
+  
+  
   /**
    * Decides which sliders are visible. 1 means just tension, 2 means just
    * length, 3 means just weight, 4 means all sliders
    * 
-   * @return
+   * @return the number of the slider that you can use.
    */
   public int whichSliders() {
+    textFont(fBig, 16);
+    textAlign(CENTER, BOTTOM);
+    switch(levelNumber + 1){
+      case 1:
+        //Only show tension
+        tSdr.setVisible(true);
+        lSdr.setVisible(false);
+        wSdr.setVisible(false);
+          fill(0);
+  
+    text("Tension = " + controlled.realTension + "N", sliderX + sliderLength / 2,
+        sliderY + 10);
+        // because I'd rather be redundant that miss something
+        break;
+      case 2: 
+        //only show length
+        tSdr.setVisible(false);
+        lSdr.setVisible(true);
+        wSdr.setVisible(false);
+          fill(0);
+    text("Length = " + controlled.realLength + "cm", sliderX + sliderLength / 2,
+        sliderY + 90);
+         // because I'd rather be redundant that miss something
+        break;
+      case 3:
+        //only show weight
+        tSdr.setVisible(false);
+        lSdr.setVisible(false);
+        wSdr.setVisible(true);
+          fill(0);
+    text("Weight = " + controlled.realWeight + "g/m", sliderX + sliderLength / 2,
+        sliderY + 170);
+        // because I'd rather be redundant that miss something
+        break;
+      case 4:
+        //show all 3 sliders
+        tSdr.setVisible(true);
+        lSdr.setVisible(true);
+        wSdr.setVisible(true);
+        text("Tension = " + controlled.realTension + "N", sliderX + sliderLength / 2,
+            sliderY + 10);
+        text("Length = " + controlled.realLength + "cm", sliderX + sliderLength / 2,
+              sliderY + 90);
+          text("Weight = " + controlled.realWeight + "g/m", sliderX + sliderLength / 2,
+              sliderY + 170);
+        // because I'd rather be redundant that miss something
+        break;
+    
+    }
     return levelNumber + 1;
   }
   
@@ -779,9 +847,4 @@ public class Level {
     return congratulations;
   }
   
-  public void showEndMess(){
-    //show the end message
-     text(levels[currLevel].getEndMessage(), boxLength/2, 100);
-
-  }
 }
