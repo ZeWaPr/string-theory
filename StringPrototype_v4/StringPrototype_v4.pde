@@ -52,10 +52,10 @@ PFont fWin;
 
 MusicString currString; //musicstring to keep track of which can currently be altered
 
-String[] objective = { "Make the frequency of String 2 match String 1 by only changing Tension.\n Play both strings at the same time to advance." ,
-            "Make the frequency of String 2 match String 1 by only changing Length.\n Play both strings at the same time to advance.",
-            "Make the frequency of String 2 match String 1 by only changing Weight.\n Play both strings at the same time to advance.", 
-            "Make the frequency of String 2 match String 1 by only changing any of the variables.\n Play both strings at the same time to finish." };
+String[] objective = { "Make the frequency of String 2 match String 1 by only changing TENSION.\n Play both strings at the same time to advance." ,
+            "Make the frequency of String 2 match String 1 by only changing LENGTH.\n Play both strings at the same time to advance.",
+            "Make the frequency of String 2 match String 1 by only changing WEIGHT.\n Play both strings at the same time to advance.", 
+            "Make the frequency of String 2 match String 1 by only changing ANY of the variables.\n Play both strings at the same time to finish." };
 
 String[] endMess = {"Congratulations!!!", "Congratulations!!!", "Congratulations!!!", "Congratulations!!!"};
 
@@ -70,6 +70,11 @@ int currLevel;
 Level[] levels = new Level[4];  //TODO: number of levels should NOT be hardcoded like this
 int winTime;
 
+PImage img;
+PImage upArrow;
+PImage downArrow;
+
+
 /*
 
 SETUP
@@ -78,12 +83,16 @@ SETUP
 
 void setup() {
   //setup screen
+
+  img = loadImage("Guitar2.png");
+  upArrow = loadImage("upArrow.png");
+  downArrow = loadImage("downArrow.png");
   size(boxLength, boxHeight);
   background (255);
   
   //initialize slider(s) and musicstring(s)
-  string = new MusicString(200);  
-  string1 = new MusicString(350); 
+  string = new MusicString(270);  
+  string1 = new MusicString(300); 
   
   
   //initialize the list of strings
@@ -124,7 +133,7 @@ void setup() {
   // show          opaque  ticks value limits
   lSdr.setShowDecor(false, true, false, true);
   lSdr.setNbrTicks(5);
-  lSdr.setLimits(5, 10, 70);
+  lSdr.setLimits(5, 25, 70);
   lSdr.setNumberFormat(G4P.DECIMAL, 1);
   
   wSdr = new GCustomSlider(this, sliderX, sliderY + 160, sliderLength, sliderHeight, null);
@@ -202,7 +211,8 @@ void draw() {
   //background color, called to wipe screen each frame
   background(255);
   textAlign(CENTER, BOTTOM);
-
+ tint(255,220);
+ image(img, 12, 100, .95*width, 3*height/5);
  //show current value of...
   //...the goal frequency
   textFont(fBig,24);
@@ -222,8 +232,22 @@ void draw() {
   //draws rectangles for the musicstring
   for (MusicString ms : strings) {
     ms.drawRectangles(ms.strLength, ms.time);
+    fill(255);
+    ellipse(ms.strStart,ms.yposition,15,15);
+    //fill(255);
+    if(ms.current==true){
+      image(upArrow,ms.strStart+ms.strLength-15,ms.yposition,30,40);
+    }
+    if(ms.current==false){
+      //rotate(PI);
+      //translate(-15, -15);
+      image(downArrow,ms.strStart+ms.strLength-15,ms.yposition-40,30,40);
+
+      //rotate(0);
+    }
   }
 
+  fill(0);
   
   //draw the play button
   stroke(0);  
@@ -311,7 +335,7 @@ float getStrFreq(float len, float ten, float wei){
 //generates a random string frequency within range of values for tension, weight, and length
 float getRandomFreq(){
   float rTension = 70 + random(20);
-  float rWeight = (0.5 + random(27)*0.25);
+  float rWeight = (0.5 + random(70)*0.1);
   float rLength = 10 + random(60);
   return getStrFreq(rLength, rTension,rWeight);
 }
@@ -349,6 +373,7 @@ MusicString getCurrentString () {
   fill(10, 200, 10);
   textFont(fWin);
     text(endMessage, boxLength/2, boxHeight / 2);
+    
   }
 
 
@@ -404,13 +429,13 @@ MusicString (int ypos){
   strStart = (boxLength/2 - maxLength/2); // string is now centered correctly -LW 
   strTension = 70; //don't know what units we want this in
   strWeight = 1;
-  minLength = 100;
+  minLength = 500/3;
   maxTension = 90;
   minTension = 70;
   maxWeight = 14;
   minWeight = 1.5;
   
-  minRealLength = 10;
+  minRealLength = 25;
   maxRealLength = 70;
   minRealTension = 70;
   maxRealTension = 90;
@@ -482,6 +507,10 @@ void drawRectangles(float strLength, float time){
     float y = yposition + getPixelMove(x,time);
     rect(x,y,1,strWeight);
   } 
+  stroke(0);
+  for (float k=strLength+strStart;k<maxLength+strStart;k=k+1){
+    rect(k,yposition,1,strWeight);
+  }
 }
 
 //this sets the current string to have attributes that make the level winnable, ie the variable they are adjusting will fall within the settable range
@@ -497,7 +526,7 @@ void makeRatioPossible(float goalRealTension, float goalRealLength, float goalRe
       //tension constant
       //cycle through random pairs of length and weight until the correct tension falls in the settable range
       while(matchPossible==false) {
-        tempLength = minRealLength + random(60);
+        tempLength = minRealLength + random(maxRealLength-minRealLength);
         tempWeight = minRealWeight + random(70)*0.1;
         tempTension = (tempWeight/1000)*pow((2*(tempLength/100)*targetFreq),2);
         if ((tempTension>=minRealTension) && (tempTension<=maxRealTension)) {
@@ -584,19 +613,21 @@ void updateReals(int attribute) {
   }
 
 
+void delay(int delay)
+{
+  int time = millis();
+  while(millis() - time <= delay);
+}
 
 //sets random values for the goal string
 void setRandomValues() {
   realTension = 70 + random(20);
-<<<<<<< HEAD
-=======
   realTension = round(realTension*10.)/10.;
->>>>>>> level-branch
   strTension = realTension;
   realWeight = (0.5 + random(70)*0.1);
   realWeight = round(realWeight*10.)/10.;
   strWeight = realWeight/weightFactor;
-  realLength = 10 + random(60);
+  realLength = minRealLength + random(maxRealLength-minRealLength);
   realLength = round(realLength*10.)/10.;
   strLength = realLength/lengthFactor;
   currentFreq = getStrFreq(realLength,realTension,realWeight);
