@@ -55,13 +55,13 @@ MusicString currString; //musicstring to keep track of which can currently be al
 String[] objective = { "Make the frequency of String 2 match String 1 by only changing TENSION.\n Play both strings at the same time to advance." ,
             "Make the frequency of String 2 match String 1 by only changing LENGTH.\n Play both strings at the same time to advance.",
             "Make the frequency of String 2 match String 1 by only changing WEIGHT.\n Play both strings at the same time to advance.", 
-            "Make the frequency of String 2 match String 1 by only changing ANY of the variables.\n Play both strings at the same time to finish.",
+            "Make the frequency of String 2 match String 1 by changing ANY of the variables.\n Play both strings at the same time to finish.",
             "When the FREQUENCY of two strings is in a ratio of 2:1 they make an octave.\nChange String 2 so that plays an octave with String 1." };
 
 String[] endMess = {"Congratulations!!!", "Congratulations!!!", "Congratulations!!!", "Congratulations!!!", "Didn't that sound nice?\nYEAH IT DID!"};
 
   //2d array for tension color scale
-  float[][] tColors = new float[3][201]; //3 columns, for RGB, and 40 rows
+  float[][] tColors = new float[3][801]; //3 columns, for RGB, and 40 rows
   float r = 0;
   float g = 0;
   float b = 0;
@@ -126,7 +126,7 @@ void setup() {
   // show          opaque  ticks value limits
   tSdr.setShowDecor(false, true, false, true); //TODO: Can we show which sliders are active or not with this?
   tSdr.setNbrTicks(5);
-  tSdr.setLimits(70, 70, 90);
+  tSdr.setLimits(70, 70, 150);
   tSdr.setNumberFormat(G4P.DECIMAL, 1);
   
   lSdr = new GCustomSlider(this, sliderX, sliderY + 80, sliderLength, sliderHeight, null);
@@ -153,12 +153,12 @@ void setup() {
   
    //initialize array of tension colors, starts at blue for lowest tension and changes to red for highest tension
   //array is 2D, column number specifies color (0=R,1=G,2=B) and row is the tension index
-  for (int k=0; k<201; k=k+1){
-    if (k<=100){
+  for (int k=0; k<801; k=k+1){
+    if (k<=400){
       tColors[0][k] = 0;
       r = 0;
-      g = k/100.;
-      b = 1-k/100.;
+      g = k/400.;
+      b = 1-k/400.;
       if(g>=b){
         tColors[1][k] = 255;
         tColors[2][k] = 255.*b/g;
@@ -168,10 +168,10 @@ void setup() {
         tColors[1][k] = 255.*g/b;
       }
     }
-    if (k>100){
+    if (k>400){
       tColors[2][k] = 0;
-      g = 1 - (k-100.)/100.;
-      r = (k-100.)/100.;
+      g = 1 - (k-400.)/400.;
+      r = (k-400.)/400.;
       if(g>=r){
         tColors[1][k] = 255;
         tColors[0][k] = 255.*r/g;
@@ -466,7 +466,8 @@ MusicString (int ypos){
   strTension = 70; //don't know what units we want this in
   strWeight = 1;
   minLength = 500/3;
-  maxTension = 90;
+  //maxTension = 90;
+  maxTension = 150;
   minTension = 70;
   maxWeight = 14;
   minWeight = 1.5;
@@ -474,7 +475,8 @@ MusicString (int ypos){
   minRealLength = 25;
   maxRealLength = 70;
   minRealTension = 70;
-  maxRealTension = 90;
+  //maxRealTension = 90;
+  maxRealTension = 150;
   minRealWeight = 0.5;
   maxRealWeight = 7.5;
   
@@ -665,7 +667,7 @@ void updateReals(int attribute) {
 
 //sets random values for the goal string
 void setRandomValues() {
-  realTension = 70 + random(20);
+  realTension = 70 + random(80);
   realTension = round(realTension*10.)/10.;
   strTension = realTension;
   realWeight = (0.5 + random(70)*0.1);
@@ -685,18 +687,31 @@ void setSpecificValues(float myFreq) {
   float maxFreq = 0.;
   float minFreq = 0.;
   float tempTension = 0.;
-  while(possible == false){    
-    realLength = minRealLength + random(maxRealLength-minRealLength);
-    maxFreq = (100/(2*realLength))*sqrt(1000*maxRealTension/minRealWeight);
-    minFreq = (100/(2*realLength))*sqrt(1000*minRealTension/maxRealWeight);
-    if(myFreq>= minFreq && myFreq<= maxFreq){
-      while( possibleW == false){
-        realWeight = (0.5 + random(70)*0.1);
-        tempTension = pow((2*realLength*myFreq/100),2)*(realWeight/1000);
-        if(tempTension>=minRealTension && tempTension<=maxRealTension){
-          realTension = tempTension;
-          possibleW = true;
-          possible = true;
+  //first check if frequency is within possible range of all the sliders
+  maxFreq = (100/(2*minRealLength))*sqrt(1000*maxRealTension/minRealWeight);
+  minFreq = (100/(2*maxRealLength))*sqrt(1000*minRealTension/maxRealWeight);
+  
+  //if outside possible range, just everything to min values
+  if(myFreq>maxFreq || myFreq<minFreq){
+    realLength = minRealLength;
+    realTension = minRealTension;
+    realWeight = minRealWeight;
+  }
+  //else, find combo of length, weight, and tension that gives specified frequency
+  else{
+    while(possible == false){    
+      realLength = minRealLength + random(maxRealLength-minRealLength);
+      maxFreq = (100/(2*realLength))*sqrt(1000*maxRealTension/minRealWeight);
+      minFreq = (100/(2*realLength))*sqrt(1000*minRealTension/maxRealWeight);
+      if(myFreq>= minFreq && myFreq<= maxFreq){
+        while( possibleW == false){
+          realWeight = (0.5 + random(70)*0.1);
+          tempTension = pow((2*realLength*myFreq/100),2)*(realWeight/1000);
+          if(tempTension>=minRealTension && tempTension<=maxRealTension){
+            realTension = tempTension;
+            possibleW = true;
+            possible = true;
+          }
         }
       }
     }
@@ -879,6 +894,12 @@ public class Level {
     if (goal.getPlayingNote() && controlled.getPlayingNote()) {
       if (goal.getFreq() / controlled.getFreq() <= ratio + .005 
       && goal.getFreq() / controlled.getFreq() >= ratio - .005) { //TODO: math.round might round too much to match to float ratio
+        // YOU WON!
+        hasWon = true;
+      }
+      //also accept if ratio is reversed
+      else if (controlled.getFreq() / goal.getFreq() <= ratio + .005 
+      && controlled.getFreq() / goal.getFreq() >= ratio - .005) { //TODO: math.round might round too much to match to float ratio
         // YOU WON!
         hasWon = true;
       }
