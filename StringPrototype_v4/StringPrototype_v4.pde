@@ -73,6 +73,8 @@ int winTime = 0;
 
 PImage img, upArrow, downArrow;
 
+//things for play button
+GImageButton playBtn;
 
 /*
 
@@ -198,6 +200,18 @@ void setup() {
   levels[4] = level5;
 
   currString.makeRatioPossible(string.getRealTension(),string.getRealLength(), string.getRealWeight(),levels[currLevel].whichSliders());
+
+  //for play button
+  cursor(CROSS);
+  String[] files;
+
+  files = new String[] { 
+    "darkTriangle.png", "lightTriangle.png", "lightTriangle.png"
+  };
+
+  playBtn = new GImageButton(this, 160, 50, 40, 40, files);
+
+
 }
 
 /*
@@ -212,6 +226,7 @@ void draw() {
         tSdr.setVisible(false);
         lSdr.setVisible(false);
         wSdr.setVisible(false);
+        playBtn.setVisible(false);
     
     
         //NOTE: Math.random didn't work, to move from processing figure out why
@@ -223,14 +238,15 @@ void draw() {
           ms.playingNote = false; 
       }
 
-      if (millis() - winTime > 6000){
+      if (millis() - winTime > 4000){
           //this resets the goal frequency after a level is won
          if (levels[currLevel].goalFrequency == 0 ){
             string.setRandomValues();
             goalFreq = getStrFreq(string.realLength, string.realTension, string.realWeight);
         
           } else { 
-             string.setStrFreq(levels[currLevel].goalFrequency);
+            string.setSpecificValues(levels[currLevel].goalFrequency);
+            goalFreq = getStrFreq(string.realLength, string.realTension, string.realWeight);
           }
           //this adjusts the current string so that the level is winnable, needs to be edited
           currString.makeRatioPossible(string.getRealTension(),string.getRealLength(), string.getRealWeight(),levels[currLevel].whichSliders());
@@ -248,9 +264,11 @@ void draw() {
 
 void stringScreenDraw(){
   background(255);
-   tint(255,220);
- image(img, 12, 100, .95*width, 3*height/5);
- 
+  tint(255,220);
+  image(img, 12, 100, .95*width, 3*height/5);
+  
+  playBtn.setVisible(true);
+   
   textAlign(CENTER, BOTTOM);
  //write instructions at the top of the screen
   textFont(fBig,24);
@@ -317,7 +335,7 @@ void mousePressed() {
       if (ms.overMusicString()) {
           if(ms.playingNote == false){
              ms.startIndex = drawIndex;
-            ms.playingNote = true;
+             ms.playingNote = true;
             //freq is rounded to whole number when it is output
             output.playNote(0,3,round(getStrFreq(ms.realLength, ms.realTension, ms.realWeight)*100.)/100.);
               break;
@@ -325,6 +343,24 @@ void mousePressed() {
       }
     }
     
+}
+
+//handles play button
+void handleButtonEvents(GImageButton button, GEvent event) {
+  if (button == playBtn){
+    if(string.playingNote == false){
+      string.startIndex = drawIndex;
+      string.playingNote = true;
+      //freq is rounded to whole number when it is output
+      output.playNote(0,3,round(getStrFreq(string.realLength, string.realTension, string.realWeight)*100.)/100.);
+    }
+    if(string1.playingNote == false){
+      string1.startIndex = drawIndex;
+      string1.playingNote = true;
+      //freq is rounded to whole number when it is output
+      output.playNote(0,3,round(getStrFreq(string1.realLength, string1.realTension, string1.realWeight)*100.)/100.);
+    }
+  }
 }
 
 //Returns Frequency of String based on length, weight, and tension of string
@@ -589,14 +625,16 @@ void updateReals(int attribute) {
       strLength = realLength / lengthFactor;
       break;
     case 3:
-      realWeight = round(wSdr.getValueF() * 10.) / 10.;
+      realWeight = round(wSdr.getValueF() * 100.) / 100.;
+      //realWeight = wSdr.getValueF();
       strWeight = realWeight / weightFactor;
       break;
     case 4:
       strTension = round(tSdr.getValueF() * 10.) / 10.;
       realTension = strTension;
 
-      realWeight = round(wSdr.getValueF() * 10.) / 10.;
+      realWeight = round(wSdr.getValueF() * 100.) / 100.;
+      //realWeight = wSdr.getValueF();
       strWeight = realWeight / weightFactor;
 
       realLength = round(lSdr.getValueF() * 10.) / 10.;
@@ -606,7 +644,8 @@ void updateReals(int attribute) {
       strTension = round(tSdr.getValueF() * 10.) / 10.;
       realTension = strTension;
 
-      realWeight = round(wSdr.getValueF() * 10.) / 10.;
+      //realWeight = round(wSdr.getValueF() * 10.) / 10.;
+      realWeight = round(wSdr.getValueF() * 100.) / 100.;
       strWeight = realWeight / weightFactor;
 
       realLength = round(lSdr.getValueF() * 10.) / 10.;
@@ -634,6 +673,36 @@ void setRandomValues() {
   strWeight = realWeight/weightFactor;
   realLength = minRealLength + random(maxRealLength-minRealLength);
   realLength = round(realLength*10.)/10.;
+  strLength = realLength/lengthFactor;
+  currentFreq = getStrFreq(realLength,realTension,realWeight);
+}
+
+//initialize tension, length and width so that you achieve desired value
+void setSpecificValues(float myFreq) {
+  boolean possible = false;
+  boolean possibleL = false;
+  boolean possibleW = false;
+  float maxFreq = 0.;
+  float minFreq = 0.;
+  float tempTension = 0.;
+  while(possible == false){    
+    realLength = minRealLength + random(maxRealLength-minRealLength);
+    maxFreq = (100/(2*realLength))*sqrt(1000*maxRealTension/minRealWeight);
+    minFreq = (100/(2*realLength))*sqrt(1000*minRealTension/maxRealWeight);
+    if(myFreq>= minFreq && myFreq<= maxFreq){
+      while( possibleW == false){
+        realWeight = (0.5 + random(70)*0.1);
+        tempTension = pow((2*realLength*myFreq/100),2)*(realWeight/1000);
+        if(tempTension>=minRealTension && tempTension<=maxRealTension){
+          realTension = tempTension;
+          possibleW = true;
+          possible = true;
+        }
+      }
+    }
+  }
+  strTension = realTension;
+  strWeight = realWeight/weightFactor;
   strLength = realLength/lengthFactor;
   currentFreq = getStrFreq(realLength,realTension,realWeight);
 }
@@ -808,8 +877,8 @@ public class Level {
     
     boolean hasWon = false;
     if (goal.getPlayingNote() && controlled.getPlayingNote()) {
-      if (goal.getFreq() / controlled.getFreq() <= ratio + .1 
-      && goal.getFreq() / controlled.getFreq() >= ratio - .1) { //TODO: math.round might round too much to match to float ratio
+      if (goal.getFreq() / controlled.getFreq() <= ratio + .005 
+      && goal.getFreq() / controlled.getFreq() >= ratio - .005) { //TODO: math.round might round too much to match to float ratio
         // YOU WON!
         hasWon = true;
       }
