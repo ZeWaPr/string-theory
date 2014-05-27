@@ -56,9 +56,16 @@ String[] objective = { "Make the frequency of String 2 match String 1 by only ch
             "Make the frequency of String 2 match String 1 by only changing LENGTH.\n Play both strings at the same time to advance.",
             "Make the frequency of String 2 match String 1 by only changing WEIGHT.\n Play both strings at the same time to advance.", 
             "Make the frequency of String 2 match String 1 by changing ANY of the variables.\n Play both strings at the same time to finish.",
-            "When the FREQUENCY of two strings is in a ratio of 2:1 they make an octave.\nChange String 2 so that plays an octave with String 1." };
+            "When the FREQUENCY of two strings is in a ratio of 2:1 they make an octave.\nChange String 2 so that plays an octave with String 1.",
+            "When the FREQUENCY of two strings is in a ratio of 3:2 they make a fifth.\nChange String 2 so that plays an fifth with String 1.",
+            "When the FREQUENCY of two strings is in a ratio of 4:3 they make a fourth.\nChange String 2 so that plays an fourth with String 1." };
 
-String[] endMess = {"Congratulations!!!", "Congratulations!!!", "Congratulations!!!", "Congratulations!!!", "Didn't that sound nice?\nYEAH IT DID!"};
+String[] endMess = {"Congratulations! \n Guitars are tuned by changing \n the tension of the strings.", 
+"Congratulations!! \n You can change the length of \n a guitar string by moving \n your finger along the fret.",
+"Congratulations!!! \n Guitars have 6 strings \n of different weights.", 
+"Congratulations!!! \n You made a match!", "Didn't that octave sound nice?\nYEAH IT DID!",
+"Congratulations!!! \n You made a match!", "Didn't that fifth sound nice?\nYEAH IT DID!",
+"Congratulations!!! \n You made a match!", "Didn't that fourth sound nice?\nYEAH IT DID!"};
 
   //2d array for tension color scale
   float[][] tColors = new float[3][801]; //3 columns, for RGB, and 40 rows
@@ -68,7 +75,7 @@ String[] endMess = {"Congratulations!!!", "Congratulations!!!", "Congratulations
 
 
 int currLevel = 0;
-Level[] levels = new Level[5];  //TODO: number of levels should NOT be hardcoded like this
+Level[] levels = new Level[7];  //TODO: number of levels should NOT be hardcoded like this
 int winTime = 0;
 
 PImage img, upArrow, downArrow;
@@ -85,7 +92,7 @@ SETUP
 void setup() {
   //setup screen
 
-  img = loadImage("Guitar2.png");
+  img = loadImage("Guitar3.png");
   upArrow = loadImage("upArrow.png");
   downArrow = loadImage("downArrow.png");
   size(boxLength, boxHeight);
@@ -186,18 +193,22 @@ void setup() {
  
  
  //TODO: find a better way to initialize levels than this 
- Level level1, level2, level3, level4, level5;
+ Level level1, level2, level3, level4, level5, level6, level7;
  level1 = new Level(0, 1., objective[0], endMess[0], string, string1,0);
  level2 = new Level(1, 1., objective[1], endMess[1], string, string1,0);
  level3 = new Level(2, 1., objective[2], endMess[2], string, string1,0);
  level4 = new Level(3, 1., objective[3], endMess[3], string, string1,0);
  level5 = new Level(4, 2., objective[4], endMess[4], string, string1, 440);
+ level6 = new Level(4, 1.5, objective[5], endMess[5], string, string1, 660);
+ level7 = new Level(4, 1.667, objective[6], endMess[6], string, string1, 880);
   
   levels[0] = level1;
   levels[1] = level2;
   levels[2] = level3;
   levels[3] = level4;
   levels[4] = level5;
+  levels[5] = level6;
+  levels[6] = level7;
 
   currString.makeRatioPossible(string.getRealTension(),string.getRealLength(), string.getRealWeight(),levels[currLevel].whichSliders());
 
@@ -209,7 +220,7 @@ void setup() {
     "darkTriangle.png", "lightTriangle.png", "lightTriangle.png"
   };
 
-  playBtn = new GImageButton(this, 160, 50, 40, 40, files);
+  playBtn = new GImageButton(this, 100, 50, 40, 40, files);
 
 
 }
@@ -265,10 +276,11 @@ void draw() {
 void stringScreenDraw(){
   background(255);
   tint(255,220);
-  image(img, 12, 100, .95*width, 3*height/5);
+  image(img, 43, 120, .92*width, .52*height);
   
   playBtn.setVisible(true);
-   
+  //playBtn.setVisible(false);
+  
   textAlign(CENTER, BOTTOM);
  //write instructions at the top of the screen
   textFont(fBig,24);
@@ -277,9 +289,13 @@ void stringScreenDraw(){
  //write current frequencies of the stings
   textFont(fBig,16);
   //NOTE: making these one line
-  text("String 1\nf = " + String.format("%.0f",string.getFreq()) + " Hz", 100, string.getYPosition() - 10);
+  fill(255,150);
+  stroke(0);
+  rect(120,285,100,120);
+  fill(0);
+  text("String 1\nf = " + String.format("%.0f",string.getFreq()) + " Hz", 120, string.getYPosition()+10);
   //text("f = " + String.format("%.0f",string.getFreq()) + " Hz", 100,230);
-  text("String 2\nf = " + String.format("%.0f",string1.getFreq()) + " Hz", 100,string1.getYPosition() + 10);
+  text("String 2\nf = " + String.format("%.0f",string1.getFreq()) + " Hz", 120,string1.getYPosition()+35);
   //text("f = " + String.format("%.0f",string1.getFreq()) + " Hz", 100,380);
  
 
