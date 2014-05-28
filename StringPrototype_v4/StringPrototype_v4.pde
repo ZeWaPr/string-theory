@@ -57,14 +57,16 @@ String[] objective = { "Make the frequency of String 2 match String 1 by only ch
             "Make the frequency of String 2 match String 1 by only changing WEIGHT.\n Play both strings at the same time to advance.", 
             "Make the frequency of String 2 match String 1 by changing ANY of the variables.\n Play both strings at the same time to finish.",
             "When the FREQUENCY of two strings is in a ratio of 2:1 they make an octave.\nChange String 2 so that plays an octave with String 1.",
-            "When the FREQUENCY of two strings is in a ratio of 3:2 they make a fifth.\nChange String 2 so that plays an fifth with String 1.",
-            "When the FREQUENCY of two strings is in a ratio of 4:3 they make a fourth.\nChange String 2 so that plays an fourth with String 1." };
+            "When the FREQUENCY of two strings is in a ratio of 3:2 they make a fifth.\nChange String 2 so that plays a fifth with String 1.",
+            "When the FREQUENCY of two strings is in a ratio of 4:3 they make a fourth.\nChange String 2 so that plays a fourth with String 1." ,
+            "Play around!!!"};
 
 String[] endMess = {"Congratulations! \n Guitars are tuned by changing \n the tension of the strings.", 
 "Congratulations!! \n You can change the length of \n a guitar string by moving \n your finger along the fret.",
 "Congratulations!!! \n Guitars have 6 strings \n of different weights.", 
 "Congratulations!!! \n You made a match!", "Didn't that octave sound nice?\nYEAH IT DID!",
 "Congratulations!!! \n You made a match!", "Didn't that fifth sound nice?\nYEAH IT DID!",
+"Congratulations!!! \n You made a match!", "Didn't that fourth sound nice?\nYEAH IT DID!",
 "Congratulations!!! \n You made a match!", "Didn't that fourth sound nice?\nYEAH IT DID!"};
 
   //2d array for tension color scale
@@ -75,7 +77,7 @@ String[] endMess = {"Congratulations! \n Guitars are tuned by changing \n the te
 
 
 int currLevel = 0;
-Level[] levels = new Level[7];  //TODO: number of levels should NOT be hardcoded like this
+Level[] levels = new Level[8];  //TODO: number of levels should NOT be hardcoded like this
 int winTime = 0;
 
 PImage img, upArrow, downArrow;
@@ -201,6 +203,8 @@ void setup() {
  level5 = new Level(4, 2., objective[4], endMess[4], string, string1, 440);
  level6 = new Level(4, 1.5, objective[5], endMess[5], string, string1, 660);
  level7 = new Level(4, 1.667, objective[6], endMess[6], string, string1, 880);
+ level7 = new Level(4, 1.667, objective[7], endMess[6], string, string1, 440);
+
   
   levels[0] = level1;
   levels[1] = level2;
