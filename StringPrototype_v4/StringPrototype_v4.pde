@@ -29,7 +29,7 @@ GCustomSlider wSdr;
 int sliderLength = 500;
 int sliderHeight = 50;
 int sliderX = boxLength/2 - sliderLength/2; //left edge of of sliders
-int sliderY = boxHeight - 250; // y coord of first slider
+int sliderY = boxHeight - 225; // y coord of first slider
 
 //audio outputs
 Minim minim, goalMinim;
@@ -84,6 +84,19 @@ PImage img, upArrow, downArrow;
 
 //things for play button
 GImageButton playBtn;
+
+//global mouse press variables
+float lastX = 0;
+float lastY = 0;
+float lastPress = 0;
+float deltaX = 0;
+float deltaY = 0;
+float deltaDist = 0;
+float timePassed = 0;
+
+//bool
+boolean showNumbers = false;
+int winAttempts = 0;
 
 /*
 
@@ -246,7 +259,7 @@ void draw() {
     
         //NOTE: Math.random didn't work, to move from processing figure out why
        fill(random(0,255), random(0,255), random(0,255));
-        showEndMess(levels[currLevel - 1].getEndMessage());  
+       showEndMess(levels[currLevel - 1].getEndMessage());  
     
       //so strings aren't still moving after win screen
       for (MusicString ms : strings) { 
@@ -270,7 +283,7 @@ void draw() {
         fill(0);
         
     } else {
-      
+       
       stringScreenDraw();
       
     }  
@@ -282,8 +295,8 @@ void stringScreenDraw(){
   tint(255,220);
   image(img, 43, 120, .92*width, .52*height);
   
-  playBtn.setVisible(true);
-  //playBtn.setVisible(false);
+  //playBtn.setVisible(true);
+  playBtn.setVisible(false);
   
   textAlign(CENTER, BOTTOM);
  //write instructions at the top of the screen
@@ -297,22 +310,45 @@ void stringScreenDraw(){
   stroke(0);
   rect(120,285,100,120);
   fill(0);
-  text("String 1\nf = " + String.format("%.0f",string.getFreq()) + " Hz", 120, string.getYPosition()+10);
-  //text("f = " + String.format("%.0f",string.getFreq()) + " Hz", 100,230);
-  text("String 2\nf = " + String.format("%.0f",string1.getFreq()) + " Hz", 120,string1.getYPosition()+35);
-  //text("f = " + String.format("%.0f",string1.getFreq()) + " Hz", 100,380);
+  
+  if (winAttempts > 5){
+    showNumbers = true;
+  }
+      
+  if (showNumbers){
+    text("String 1\nf = " + String.format("%.0f",string.getFreq()) + " Hz", 120, string.getYPosition()+10);  
+    text("String 2\nf = " + String.format("%.0f",string1.getFreq()) + " Hz", 120,string1.getYPosition()+35);
+  }
+  
+  if(string.getCurrent()){
+    text("CURRENT STRING = 1", 450,500);
+  }
+  
+  if(string1.getCurrent()){
+     text("CURRENT STRING  = 2", 450,500);
+  }
  
-
+  //copied from setup, want to update currString variable
+  //can set which levels that both strings can be adjusted with if statement
+  if (levels[currLevel].getLevelNum()>=0){
+    for (MusicString ms : strings) {
+      if(ms.getCurrent()) {
+        currString = ms;
+        break;  //so there's only ever one
+      }
+    }
+  }
+  
   //draws rectangles for the musicstring
   for (MusicString ms : strings) {
     ms.drawRectangles(ms.strLength, ms.time);
     fill(255);
     ellipse(ms.strStart,ms.yposition,15,15);
     //fill(255);
-    if(ms.current==true){
+    if(ms == string1){
       image(upArrow,ms.strStart+ms.strLength-15,ms.yposition,30,40);
     }
-    if(ms.current==false){
+    if(ms == string){
       //rotate(PI);
       //translate(-15, -15);
       image(downArrow,ms.strStart+ms.strLength-15,ms.yposition-40,30,40);
@@ -350,18 +386,36 @@ void stringScreenDraw(){
 }
 
 void mousePressed() {
-
+  timePassed = millis() - lastPress;
+  deltaX = mouseX-lastX;
+  deltaY = mouseY-lastY;
+  deltaDist = sqrt(pow(deltaX,2)+pow(deltaY,2));
+  
   for ( MusicString ms : strings){
       if (ms.overMusicString()) {
+          if(timePassed<1000 && deltaDist<10){
+             makeCurrentString(ms); //new line to switch the current string
+             break;
+          }
           if(ms.playingNote == false){
              ms.startIndex = drawIndex;
              ms.playingNote = true;
             //freq is rounded to whole number when it is output
             output.playNote(0,3,round(getStrFreq(ms.realLength, ms.realTension, ms.realWeight)*100.)/100.);
+            //this code will only work for these 2 strings, needs to be adapted if more strings will be used at some point
+            if(ms == string && string1.playingNote == true){
+              winAttempts += 1;
+            }
+            if(ms == string1 && string.playingNote == true){
+              winAttempts += 1;
+            }
               break;
           }
       }
     }
+  lastX = mouseX;
+  lastY = mouseY;
+  lastPress = millis();
     
 }
 
@@ -410,6 +464,10 @@ void makeCurrentString(MusicString newCurrent) {
     }
   }
   newCurrent.setCurrent(true);
+  //set sliders to match value of new current string
+  wSdr.setValue(newCurrent.realWeight);
+  lSdr.setValue(newCurrent.realLength);
+  tSdr.setValue(newCurrent.realTension);
 }
 
 //returns the string that can currently be altered, defaults to first string in strings
@@ -916,12 +974,16 @@ public class Level {
       && goal.getFreq() / controlled.getFreq() >= ratio - .005) { //TODO: math.round might round too much to match to float ratio
         // YOU WON!
         hasWon = true;
+        winAttempts=0; //reset after winning
+        showNumbers = false;
       }
       //also accept if ratio is reversed
       else if (controlled.getFreq() / goal.getFreq() <= ratio + .005 
       && controlled.getFreq() / goal.getFreq() >= ratio - .005) { //TODO: math.round might round too much to match to float ratio
         // YOU WON!
         hasWon = true;
+        winAttempts=0; //reset after winning
+        showNumbers = false;
       }
     }
     return hasWon;
