@@ -17,7 +17,6 @@ ArrayList<MusicString> strings; //arraylist so user can add and remove strings w
 //size of animation screen
 int boxLength = 900;
 int boxHeight = 750;
-
 boolean stringOver = false;
 
 //sliders
@@ -103,6 +102,9 @@ int winAttempts = 0;
 SETUP
 
 */
+//file name includes the hour, minute, and second
+String outputFile = "output"+ "_" + hour()+ "_" + minute()+ "_" +second()+".txt";
+PrintWriter textOutput = createWriter(outputFile);
 
 void setup() {
   //setup screen
@@ -642,8 +644,10 @@ void makeRatioPossible(float goalRealTension, float goalRealLength, float goalRe
       //tension constant
       //cycle through random pairs of length and weight until the correct tension falls in the settable range
       while(matchPossible==false) {
+        //set length and width to random values
         tempLength = minRealLength + random(maxRealLength-minRealLength);
         tempWeight = minRealWeight + random(70)*0.1;
+        //if the required tension is possible, then set matchPossible to true
         tempTension = (tempWeight/1000)*pow((2*(tempLength/100)*targetFreq),2);
         if ((tempTension>=minRealTension) && (tempTension<=maxRealTension)) {
           matchPossible = true;
@@ -765,6 +769,7 @@ void setSpecificValues(float myFreq) {
   float maxFreq = 0.;
   float minFreq = 0.;
   float tempTension = 0.;
+  
   //first check if frequency is within possible range of all the sliders
   maxFreq = (100/(2*minRealLength))*sqrt(1000*maxRealTension/minRealWeight);
   minFreq = (100/(2*maxRealLength))*sqrt(1000*minRealTension/maxRealWeight);
@@ -986,7 +991,14 @@ public class Level {
         showNumbers = false;
       }
     }
+    if(hasWon == true) {
+      //output level number and time completed to a text file
+      //time completed is in milliseconds
+      textOutput.println(levelNumber + " , " + millis());
+      textOutput.flush();
+    }
     return hasWon;
+    
   }
   
   /**
