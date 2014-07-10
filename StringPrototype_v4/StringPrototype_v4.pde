@@ -226,16 +226,12 @@ void setup() {
  Level level1, level2, level3, level4, level5, level6, level7;
  //Tension Tutorial
  level1 = new Level(0, 1., objective[0], endMess[0], string, string1, 0);
-
  //Length Tutorial
  level2 = new Level(1, 1., objective[2], endMess[2], string, string1, 0);
-
  //Weight Tutorial
  level3 = new Level(2, 1., objective[4], endMess[4], string, string1, 0);
-
  //All Attr Tutorial
  level4 = new Level(3, 1., objective[6], endMess[6], string, string1, 0);
-
  //Harmony Levels
  level5 = new Level(4, 2., objective[8], endMess[8], string, string1, 660);
  level6 = new Level(4, 1.5, objective[9], endMess[9], string, string1, 880);
@@ -302,8 +298,8 @@ void draw() {
           currString.makeRatioPossible(string.getRealTension(),string.getRealLength(), string.getRealWeight(),levels[currLevel].whichSliders());
           winTime = 0;
        } else {
-        noLoop(); //stop the game
-      }
+          noLoop(); //stop the game
+       }
       } 
         fill(0);
         
