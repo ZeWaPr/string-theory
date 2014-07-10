@@ -52,21 +52,30 @@ PFont fWin;
 MusicString currString; //musicstring to keep track of which can currently be altered
 
 String[] objective = { "Make the frequency of String 2 match String 1 by only changing TENSION.\n Play both strings at the same time to advance." ,
-            "Make the frequency of String 2 match String 1 by only changing LENGTH.\n Play both strings at the same time to advance.",
-            "Make the frequency of String 2 match String 1 by only changing WEIGHT.\n Play both strings at the same time to advance.", 
-            "Make the frequency of String 2 match String 1 by changing ANY of the variables.\n Play both strings at the same time to finish.",
-            "When the FREQUENCY of two strings is in a ratio of 2:1 they make an octave.\nChange String 2 so that plays an octave with String 1.",
-            "When the FREQUENCY of two strings is in a ratio of 3:2 they make a fifth.\nChange String 2 so that plays a fifth with String 1.",
-            "When the FREQUENCY of two strings is in a ratio of 4:3 they make a fourth.\nChange String 2 so that plays a fourth with String 1." ,
-            "Play around!!!"};
+                        "Play around with TENSION!",
+                       "Make the frequency of String 2 match String 1 by only changing LENGTH.\n Play both strings at the same time to advance.",
+                         "Play around with LENGTH!",
+                       "Make the frequency of String 2 match String 1 by only changing WEIGHT.\n Play both strings at the same time to advance.", 
+                         "Play around with WEIGHT!",
+                       "Make the frequency of String 2 match String 1 by changing ANY of the variables.\n Play both strings at the same time to finish.",
+                         "Play around!!!",
+                       "When the FREQUENCY of two strings is in a ratio of 2:1 they make an octave.\nChange String 2 so that plays an octave with String 1.",
+                       "When the FREQUENCY of two strings is in a ratio of 3:2 they make a fifth.\nChange String 2 so that plays a fifth with String 1.",
+                       "When the FREQUENCY of two strings is in a ratio of 4:3 they make a fourth.\nChange String 2 so that plays a fourth with String 1.", 
+                       "Have Fun!"};
 
 String[] endMess = {"Congratulations! \n Guitars are tuned by changing \n the tension of the strings.", 
-"Congratulations!! \n You can change the length of \n a guitar string by moving \n your finger along the fret.",
-"Congratulations!!! \n Guitars have 6 strings \n of different weights.", 
-"Congratulations!!! \n You made a match!", "Didn't that octave sound nice?\nYEAH IT DID!",
-"Congratulations!!! \n You made a match!", "Didn't that fifth sound nice?\nYEAH IT DID!",
-"Congratulations!!! \n You made a match!", "Didn't that fourth sound nice?\nYEAH IT DID!",
-"Congratulations!!! \n You made a match!", "Didn't that fourth sound nice?\nYEAH IT DID!"};
+                    "Ready for the next level?",
+                    "Congratulations!! \n You can change the length of \n a guitar string by moving \n your finger along the fret.",
+                    "Ready for the next level?",
+                    "Congratulations!!! \n Guitars have 6 strings \n of different weights.",
+                    "Ready for the next level?",
+                    "Congratulations!!! \n You made a match!",
+                    "Now for something a little different!", 
+                    "Didn't that octave sound nice?\nYEAH IT DID!",
+                    "Didn't that fifth sound nice?\nYEAH IT DID!",
+                    "Didn't that fourth sound nice?\nYEAH IT DID!",
+                    "Thanks for playing!"};
 
   //2d array for tension color scale
   float[][] tColors = new float[3][801]; //3 columns, for RGB, and 40 rows
@@ -76,13 +85,18 @@ String[] endMess = {"Congratulations! \n Guitars are tuned by changing \n the te
 
 
 int currLevel = 0;
-Level[] levels = new Level[8];  //TODO: number of levels should NOT be hardcoded like this
+Level[] levels = new Level[12];  //TODO: number of levels should NOT be hardcoded like this
 int winTime = 0;
 
 PImage img, upArrow, downArrow;
 
 //things for play button
 GImageButton playBtn;
+
+//for ending free play levels
+GImageButton doneBtn;
+boolean doneWithLevel = false;
+
 
 //global mouse press variables
 float lastX = 0;
@@ -210,36 +224,52 @@ void setup() {
  
  
  //TODO: find a better way to initialize levels than this 
- Level level1, level2, level3, level4, level5, level6, level7;
- level1 = new Level(0, 1., objective[0], endMess[0], string, string1,0);
- level2 = new Level(1, 1., objective[1], endMess[1], string, string1,0);
- level3 = new Level(2, 1., objective[2], endMess[2], string, string1,0);
- level4 = new Level(3, 1., objective[3], endMess[3], string, string1,0);
- level5 = new Level(4, 2., objective[4], endMess[4], string, string1, 440);
- level6 = new Level(4, 1.5, objective[5], endMess[5], string, string1, 660);
- level7 = new Level(4, 1.667, objective[6], endMess[6], string, string1, 880);
- level7 = new Level(4, 1.667, objective[7], endMess[6], string, string1, 440);
-
+ Level level1, level2, level3, level4, level5, level6, level7, level8, level9, level10, level11, level12;
+ //Tension Tutorial
+ level1 = new Level(0, 1., objective[0], endMess[0], string, string1, 0);
+ level2 = new Level(0, 1., objective[1], endMess[1], string, string1, 0); 
+ //Length Tutorial
+ level3 = new Level(1, 1., objective[2], endMess[2], string, string1, 0);
+ level4 = new Level(1, 1., objective[3], endMess[3], string, string1, 0);
+ //Weight Tutorial
+ level5 = new Level(2, 1., objective[4], endMess[4], string, string1, 0);
+ level6 = new Level(2, 1., objective[5], endMess[5], string, string1, 0);
+ //All Attr Tutorial
+ level7 = new Level(3, 1., objective[6], endMess[6], string, string1, 0);
+ level8 = new Level(3, 1., objective[7], endMess[7], string, string1, 0);
+ //Harmony Levels
+ level9 = new Level(4, 2., objective[8], endMess[8], string, string1, 660);
+ level10 = new Level(4, 1.5, objective[9], endMess[9], string, string1, 880);
+ level11 = new Level(4, 1.33, objective[10], endMess[10], string, string1, 440);
+ //Last Free Play
+ level12 = new Level(4, 1., objective[11], endMess[11], string, string1, 0);
   
   levels[0] = level1;
-  levels[1] = level2;
-  levels[2] = level3;
-  levels[3] = level4;
-  levels[4] = level5;
-  levels[5] = level6;
-  levels[6] = level7;
-
+  levels[1]= level2;
+  levels[2]= level3;
+  levels[3]= level4;
+  levels[4]= level5;
+  levels[5]= level6;
+  levels[6]= level7;
+  levels[7]= level8;
+  levels[8]= level9;
+  levels[9]= level10;
+  levels[10]= level11;
+  levels[11]= level12;
+  
   currString.makeRatioPossible(string.getRealTension(),string.getRealLength(), string.getRealWeight(),levels[currLevel].whichSliders());
 
   //for play button
   cursor(CROSS);
   String[] files;
-
+  String[] doneBtnImg;
+  
   files = new String[] { 
-    "darkTriangle.png", "lightTriangle.png", "lightTriangle.png"
+    "darkTriangle.png", "lightTriangle.png", "lightTriangle.png", 
   };
-
+  doneBtnImg = new String[] {"doneButton.png"};
   playBtn = new GImageButton(this, 100, 50, 40, 40, files);
+  doneBtn = new GImageButton(this, boxLength - 125, boxHeight - 125, 100, 100, doneBtnImg);
 
 
 }
@@ -250,18 +280,21 @@ DRAW
 
 */
 void draw() {
-
     if (winTime != 0) {
       
         tSdr.setVisible(false);
         lSdr.setVisible(false);
         wSdr.setVisible(false);
         playBtn.setVisible(false);
+        doneBtn.setVisible(false);
     
     
-        //NOTE: Math.random didn't work, to move from processing figure out why
-       fill(random(0,255), random(0,255), random(0,255));
-       showEndMess(levels[currLevel - 1].getEndMessage());  
+       fill(255);
+       if (currLevel != 0) {
+         showEndMess(levels[currLevel - 1].getEndMessage());
+       } else{
+         showEndMess(levels[11].getEndMessage()); // show endmess from the last level when wrapping back to start
+       }  
     
       //so strings aren't still moving after win screen
       for (MusicString ms : strings) { 
@@ -298,7 +331,13 @@ void stringScreenDraw(){
   image(img, 43, 120, .92*width, .52*height);
   
   //playBtn.setVisible(true);
-  playBtn.setVisible(false);
+   playBtn.setVisible(false);       
+  //TODO: move visiblility setting somewhere else, doens't need to happen on every draw
+  if (currLevel == 1 || currLevel == 3 || currLevel == 5 ||currLevel == 7 ||currLevel == 11 ){
+    doneBtn.setVisible(true);      
+  } else {
+     doneBtn.setVisible(false);      
+  }
   
   textAlign(CENTER, BOTTOM);
  //write instructions at the top of the screen
@@ -379,8 +418,25 @@ void stringScreenDraw(){
   
   //subtracting 1 from levels.length stops the code from breaking, and I can still get to all 3 levels
   if (levels[currLevel].hasWon() && levels[currLevel].getLevelNum() < levels.length - 1) {
-      winTime = millis();
-      currLevel++; 
+      if (currLevel >= 11) {
+        currLevel = 0;
+        doneWithLevel = false;
+        winTime = millis();
+      } else {
+        doneWithLevel = false;
+        winTime = millis();
+        currLevel++;
+      } 
+    } else if (doneWithLevel  && levels[currLevel].getLevelNum() < levels.length - 1  ) {
+      if (currLevel >= 11) {
+        currLevel = 0;
+        doneWithLevel = false;
+        winTime = millis();
+      } else {
+        doneWithLevel = false;
+        winTime = millis();
+        currLevel++;
+      } 
     }
   
   //update frame counter
@@ -423,6 +479,9 @@ void mousePressed() {
 
 //handles play button
 void handleButtonEvents(GImageButton button, GEvent event) {
+    if (button == doneBtn){
+        doneWithLevel = true;
+    }
   if (button == playBtn){
     if(string.playingNote == false){
       string.startIndex = drawIndex;
@@ -430,6 +489,7 @@ void handleButtonEvents(GImageButton button, GEvent event) {
       //freq is rounded to whole number when it is output
       output.playNote(0,3,round(getStrFreq(string.realLength, string.realTension, string.realWeight)*100.)/100.);
     }
+
     if(string1.playingNote == false){
       string1.startIndex = drawIndex;
       string1.playingNote = true;
@@ -951,7 +1011,7 @@ public class Level {
   String instructions, congratulations;
   MusicString goal, controlled;
   float goalFrequency;
-
+  
   Level(int levelNum, float ratioCondition, String instruct,
       String endMessage, MusicString goalString, MusicString currentString, float goalFreq) {
 
@@ -990,7 +1050,7 @@ public class Level {
         winAttempts=0; //reset after winning
         showNumbers = false;
       }
-    }
+    } 
     if(hasWon == true) {
       //output level number and time completed to a text file
       //time completed is in milliseconds
@@ -1003,7 +1063,7 @@ public class Level {
   
   /**
    * Decides which sliders are visible. 1 means just tension, 2 means just
-   * length, 3 means just weight, 4 means all sliders
+   * length, 3 means just weight, 4 means all sliders, 5 means the same as 4???
    * TODO: change this swtich so don't need to add 
    *       case every time you add a level past the tutorial
    * @return the number of the slider that you can use.
